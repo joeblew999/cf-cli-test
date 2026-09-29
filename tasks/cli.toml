@@ -1,0 +1,29 @@
+# The cf CLI itself and the Cloudflare login.
+
+[cf]
+description = "Run PROJECT's cf with any arguments: mise run cf -- <args>"
+dir = "{{config_root}}/{{env.PROJECT}}"
+raw_args = true
+run = "./node_modules/.bin/cf"
+
+[search]
+description = "Which cf command does a thing: mise run search \"create a kv namespace\" (judge by output: unknown commands exit 0)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<task>"'
+run = '''./node_modules/.bin/cf cli search "$usage_task" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>JSON.parse(s).forEach(r=>console.log(r.command.padEnd(44)+" "+r.summary.split(". ")[0])))' '''
+
+[schema]
+description = "The API request behind a command: mise run schema -- d1 list"
+dir = "{{config_root}}/{{env.PROJECT}}"
+raw_args = true
+run = "./node_modules/.bin/cf schema"
+
+[login]
+description = "Log cf in (browser OAuth device code, 2 pages; the 1-hour token refreshes automatically). Or set CLOUDFLARE_API_TOKEN"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = "./node_modules/.bin/cf auth login --force"
+
+[whoami]
+description = "cf's login: account and token expiry"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = "./node_modules/.bin/cf auth whoami | node -e 'let s=\"\";process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{const w=JSON.parse(s);console.log(w.authenticated?`${w.email}  accounts: ${w.accounts.map(a=>a.name).join(\", \")}  expires: ${w.expiresAt ?? \"-\"}`:\"not logged in: mise run login\")})'"

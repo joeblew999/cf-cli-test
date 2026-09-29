@@ -1,0 +1,30 @@
+# Projects made with `mise run new` / `init` (app/ is the default PROJECT)
+/app/
+node_modules/
+.cloudflare/
+.wrangler/
+
+# Secrets: local (.dev.vars*) and remote (.secrets/<mode>.env)
+.dev.vars*
+.env*
+.secrets/
+
+# What this checkout created on a Cloudflare account (per account, per person)
+.cf-manifest.json
+
+# Verify and fuzz runs
+.verify/
+fuzz/out/
+*.cpuprofile
+*.log
+.DS_Store
+
+# The Forge OpenAPI spec (26 MB; mise run mcp:generate downloads it)
+.forge/
+
+# Fern install, generated SDKs/CLIs, and the SDK copy the harness Worker uses (mise run sdk:harness:sync)
+sdk/node_modules/
+sdk/out/
+sdk/.work/
+sdk/harness/src/client/
+target/

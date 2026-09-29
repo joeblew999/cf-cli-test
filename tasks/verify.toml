@@ -1,0 +1,36 @@
+# Re-run the evaluation when cf changes: bump the cf version in template/package.json, then run these.
+
+[verify]
+description = "Local end-to-end check of the template and tasks (no account): new -> types -> tests -> dev -> local D1 migration -> API"
+run = "bash {{config_root}}/scripts/verify.sh local"
+
+["verify:remote"]
+description = "REMOTE: deploy the verify project as cftest-verify and check the live API, D1, KV, versions and logs (run verify first; cleanup after)"
+run = "bash {{config_root}}/scripts/verify.sh remote"
+
+[fuzz]
+description = "READ-ONLY fuzz of cf itself (PROJECT's cf): random list/get commands, paging, search quality, dry runs, output modes -> fuzz/out/"
+run = """
+set -uo pipefail
+cd {{config_root}}/fuzz && mkdir -p out
+node fuzz.mjs 60 | tee out/fuzz.txt
+node paging.mjs | tee out/paging.txt
+node search.mjs | tee out/search.txt
+bash dryrun.sh > out/dryrun.md && echo "dry runs -> fuzz/out/dryrun.md"
+bash global.sh > out/global.txt && echo "global flags -> fuzz/out/global.txt"
+bash output-modes.sh > out/output-modes.txt && echo "output modes -> fuzz/out/output-modes.txt"
+"""
+
+[check]
+description = "Every LOCAL check in one go (no Cloudflare account, needs Docker): the template loop (verify), SDK generation + checks (sdk:demo), and the TypeScript SDK inside workerd under cf dev (sdk:harness:test)"
+run = '''
+set -uo pipefail
+failed=0
+for task in verify sdk:demo sdk:harness:test; do
+  echo "== $task"
+  mise run -q "$task" >/tmp/check-$$.log 2>&1 && echo "   ok" || { echo "   FAILED:"; tail -15 /tmp/check-$$.log | sed 's/^/   /'; failed=1; }
+done
+rm -f /tmp/check-$$.log
+[ "$failed" = 0 ] && echo "All local checks passed." || echo "Some checks FAILED."
+exit $failed
+'''

@@ -1,0 +1,60 @@
+# The data `cf dev` is using, through its Local Explorer API (needs `mise run dev` on PORT).
+# cf's own --local data commands hang or return nothing, so these go to the dev server.
+# Local resources are named <BINDING>-<worker>, e.g. DB-hello; keys are URL-encoded.
+
+["local:db:migrate"]
+description = "LOCAL: apply migrations/*.sql to the dev D1 (each once; cf can't migrate the local DB)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "[binding]" default="DB"'
+run = 'node {{config_root}}/scripts/local-migrate.mjs "$(node {{config_root}}/scripts/cfx.mjs worker)" "$usage_binding"'
+
+["local:db"]
+description = "LOCAL: run SQL on the dev D1 by binding: mise run local:db DB '<sql>'"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<binding>"
+arg "<sql>"
+'''
+run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker)
+curl -fsS -X POST "http://localhost:$PORT/cdn-cgi/local/explorer/api/d1/database/$usage_binding-$W/raw" -H 'content-type: application/json' \
+  -d "$(node -e 'console.log(JSON.stringify({sql:process.argv[1]}))' "$usage_sql")" \
+  | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const r of JSON.parse(s).result){const {columns,rows}=r.results;console.table(rows.map(x=>Object.fromEntries(columns.map((c,i)=>[c,x[i]]))))}})' '''
+
+["local:kv:put"]
+description = "LOCAL: set a key in the dev KV by binding: mise run local:kv:put KV <key> <value>"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<binding>"
+arg "<key>"
+arg "<value>"
+'''
+run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker); K=$(node -p 'encodeURIComponent(process.argv[1])' "$usage_key")
+curl -fsS -X PUT "http://localhost:$PORT/cdn-cgi/local/explorer/api/storage/kv/namespaces/$usage_binding-$W/values/$K" --data-binary "$usage_value"; echo'''
+
+["local:kv:get"]
+description = "LOCAL: read a key from the dev KV by binding"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<binding>"
+arg "<key>"
+'''
+run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker); K=$(node -p 'encodeURIComponent(process.argv[1])' "$usage_key")
+curl -fsS "http://localhost:$PORT/cdn-cgi/local/explorer/api/storage/kv/namespaces/$usage_binding-$W/values/$K"; echo'''
+
+["local:r2:put"]
+description = "LOCAL: upload a file into the dev R2 by binding: mise run local:r2:put BUCKET <key> <file>"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<binding>"
+arg "<key>"
+arg "<file>"
+'''
+run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker); K=$(node -p 'encodeURIComponent(process.argv[1])' "$usage_key")
+curl -fsS -X PUT "http://localhost:$PORT/cdn-cgi/local/explorer/api/r2/buckets/$usage_binding-$W/objects/$K" --data-binary "@$usage_file"; echo'''
+
+["local:r2:ls"]
+description = "LOCAL: list objects in the dev R2 by binding"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<binding>"'
+run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker)
+curl -fsS "http://localhost:$PORT/cdn-cgi/local/explorer/api/r2/buckets/$usage_binding-$W/objects" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>JSON.parse(s).result.forEach(o=>console.log(o.size+"\t"+o.key)))' '''

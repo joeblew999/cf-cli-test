@@ -1,0 +1,29 @@
+{
+	"name": "cftest-api",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "cf dev",
+		"build": "cf build",
+		"deploy": "cf deploy",
+		"typecheck": "cf workers types && tsc",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@cloudflare/vite-plugin": "beta",
+		"@cloudflare/vitest-pool-workers": "^0.22.0",
+		"cf": "1.0.0-beta.5",
+		"typescript": "^7.0.2",
+		"vite": "^8.3.0",
+		"vitest": "^4.1.11"
+	},
+	"dependencies": {
+		"@orpc/contract": "^1.15.4",
+		"@orpc/experimental-publisher": "^1.15.4",
+		"@orpc/experimental-publisher-durable-object": "^1.15.4",
+		"@orpc/openapi": "^1.15.4",
+		"@orpc/server": "^1.15.4",
+		"@orpc/zod": "^1.15.4",
+		"zod": "^4.6.5"
+	}
+}

@@ -1,0 +1,59 @@
+# Shipping and watching PROJECT's Worker (REMOTE). MODE picks the config branch (default production);
+# every deploy records what it creates in .cf-manifest.json.
+
+[deploy]
+description = "REMOTE: deploy PROJECT in MODE; uploads .secrets/<MODE>.env if present (a first deploy with bindings.secret() needs it). Extra args reach cf (--tag, --message)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+raw_args = true
+# mise appends arguments to the end of the script: the function takes them, so they reach cf.
+run = '''
+deploy() {
+  set -o pipefail
+  M="${MODE:-production}"; F=".secrets/$M.env"
+  set -- --mode "$M" "$@"; [ -f "$F" ] && set -- "$@" --secrets-file "$F"
+  ./node_modules/.bin/cf deploy "$@" 2>&1 | node {{config_root}}/scripts/record.mjs
+}; deploy'''
+
+[versions]
+description = "REMOTE, read only: the Worker's versions, newest first, with the live traffic split"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = 'WORKER="$(node {{config_root}}/scripts/cfx.mjs worker)" node {{config_root}}/scripts/deploys.mjs versions'
+
+[release]
+description = "REMOTE: upload PROJECT as a new version and send PERCENT of traffic to it: mise run release 10 (TAG=, MESSAGE= optional)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "[percent]" default="10"'
+run = 'WORKER="$(node {{config_root}}/scripts/cfx.mjs worker)" node {{config_root}}/scripts/deploys.mjs release "$usage_percent"'
+
+[promote]
+description = "REMOTE: send 100% of traffic to a version (default the newest)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "[version]"'
+run = 'WORKER="$(node {{config_root}}/scripts/cfx.mjs worker)" node {{config_root}}/scripts/deploys.mjs promote ${usage_version:-}'
+
+[rollback]
+description = "REMOTE: send 100% of traffic back to the previous version, or to a given one (cf has no rollback command)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "[version]"'
+run = 'WORKER="$(node {{config_root}}/scripts/cfx.mjs worker)" node {{config_root}}/scripts/deploys.mjs rollback ${usage_version:-}'
+
+[preview]
+description = "REMOTE: deploy PROJECT as a named Worker Preview (production untouched): mise run preview pr-1. Fails if the config has triggers (cron)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<name>"'
+run = './node_modules/.bin/cf previews deploy "$usage_name"'
+
+[logs]
+description = "REMOTE, read only: recent logs of the Worker (cf has no live tail; needs observability: { enabled: true })"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+flag "--since <duration>" default="60m" help="e.g. 30m, 24h, 7d"
+flag "--limit <n>" default="20"
+'''
+run = 'node {{config_root}}/scripts/logs.mjs "$(node {{config_root}}/scripts/cfx.mjs worker)" --since "$usage_since" --limit "$usage_limit"'
+
+[errors]
+description = "REMOTE, read only: error events of the Worker, with their version"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'flag "--since <duration>" default="60m"'
+run = 'WORKER="$(node {{config_root}}/scripts/cfx.mjs worker)" node {{config_root}}/scripts/deploys.mjs errors --since "$usage_since"'

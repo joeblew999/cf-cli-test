@@ -1,0 +1,8 @@
+/          200 <!doctype html><html><head><title>cftest-legacy</title><link rel="stylesheet" href="/style.css"></head><body><h1>legacy static asset</h1></body></html> 
+/style.css 200 body{font-family:sans-serif;color:#333} 
+/api/vars  200 {"greeting":"hello-prod","appEnv":"production","features":{"beta":false}}
+/api/kv    200 {"kv":2}
+/api/d1    200 {"d1":3}
+/api/r2    200 {"r2":"written 2026-09-29T06:21:20.973Z"}
+/api/do    200 {"do":2}
+/api/cron  200 {"lastCron":"2026-09-29T06:00:13.000Z"}

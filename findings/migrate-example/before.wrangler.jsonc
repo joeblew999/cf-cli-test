@@ -1,0 +1,31 @@
+{
+  // Classic Wrangler project used to test `cf migrate`
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cftest-legacy",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "vars": { "GREETING": "hello-prod", "APP_ENV": "production", "FEATURES": { "beta": false } },
+  "kv_namespaces": [{ "binding": "KV", "id": "af436682654144aa85eb7e5c60de7fae" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "cftest-legacy-db", "database_id": "ede76f7c-1324-4d50-a781-39a3cce7cd50", "migrations_dir": "migrations" }],
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "cftest-legacy-bucket" }],
+  "durable_objects": { "bindings": [{ "name": "COUNTER", "class_name": "Counter" }] },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Counter"] }
+  ],
+  "triggers": { "crons": ["*/30 * * * *"] },
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "env": {
+    "staging": {
+      "name": "cftest-legacy-staging",
+      "vars": { "GREETING": "hello-staging", "APP_ENV": "staging", "FEATURES": { "beta": true } },
+      "kv_namespaces": [{ "binding": "KV", "id": "bd30195a38fa4f1cbdf17dffa7f17f92" }],
+      "d1_databases": [{ "binding": "DB", "database_name": "cftest-legacy-db", "database_id": "ede76f7c-1324-4d50-a781-39a3cce7cd50", "migrations_dir": "migrations" }],
+      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "cftest-legacy-bucket" }],
+      "durable_objects": { "bindings": [{ "name": "COUNTER", "class_name": "Counter" }] },
+      "triggers": { "crons": [] }
+    }
+  }
+}

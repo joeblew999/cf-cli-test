@@ -1,0 +1,71 @@
+# The local loop: no Cloudflare account needed. MODE picks the config branch (ctx.mode).
+
+[new]
+description = "New project from template/ (SPA + /api, D1, KV), or --full: template-full/ (+ DO, queue, cron, workflow, AI, R2): mise run new <dir>"
+usage = '''
+arg "<dir>"
+flag "--name <name>" help="Worker name (default: the directory's name)"
+flag "--full" help="start from template-full/ (every binding)"
+'''
+run = """
+set -euo pipefail
+[ -e "$usage_dir" ] && { echo "$usage_dir already exists" >&2; exit 1; }
+name="${usage_name:-$(basename "$usage_dir")}"
+from=template; [ "${usage_full:-false}" = true ] && from=template-full
+cp -R "$from" "$usage_dir"
+node {{config_root}}/scripts/cfx.mjs rename "$usage_dir" "$name"
+cd "$usage_dir" && npm install --no-fund --no-audit >/dev/null && ./node_modules/.bin/cf workers types >/dev/null
+echo "Created $usage_dir from $from/ (Worker $name). Next: PROJECT=$usage_dir mise run dev"
+"""
+
+[init]
+description = "cf's own minimal scaffold (cf init) into <dir>, with the dev port taken from PORT"
+usage = 'arg "<dir>"'
+run = """
+set -euo pipefail
+[ -e "$usage_dir" ] && { echo "$usage_dir already exists" >&2; exit 1; }
+npx -y cf@1.0.0-beta.5 init workers "$usage_dir" --package-manager npm </dev/null
+# cf dev --port fails (it cannot forward arguments to Vite): Vite takes the port from its config.
+node {{config_root}}/scripts/cfx.mjs port "$usage_dir/vite.config.ts"
+"""
+
+[install]
+description = "Install PROJECT's dependencies (its pinned cf) and show the cf version"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = ["npm install --no-fund --no-audit", "./node_modules/.bin/cf --version"]
+
+[dev]
+description = "Local dev server for PROJECT on PORT in MODE (default development). Secrets: .dev.vars.<MODE>, .dev.vars or .env*"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = './node_modules/.bin/cf dev --mode "${MODE:-development}"'
+
+[build]
+description = "Build PROJECT in MODE (default production) into .cloudflare/output/"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = './node_modules/.bin/cf build --mode "${MODE:-production}"'
+
+[types]
+description = "Generate the typed env from cloudflare.config.ts and typecheck (catches wrong binding use)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = ["./node_modules/.bin/cf workers types", "npx tsc --noEmit"]
+
+[test]
+description = "Run PROJECT's tests (vitest + pool-workers; it ignores cloudflare.config.ts, so vitest.config.ts restates the bindings)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = "npx vitest run"
+
+[check]
+description = "Profile PROJECT's Worker startup time (writes worker-startup.cpuprofile)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = "./node_modules/.bin/cf workers check"
+
+[migrate]
+description = "Convert PROJECT's wrangler.jsonc to cloudflare.config.ts (needs local wrangler 4.100+). Resolve its TODOs, then switch package.json scripts to cf"
+dir = "{{config_root}}/{{env.PROJECT}}"
+raw_args = true
+run = "./node_modules/.bin/cf migrate"
+
+["worker:name"]
+description = "The Worker name PROJECT's config resolves to in MODE (builds once)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+run = "node {{config_root}}/scripts/cfx.mjs worker"

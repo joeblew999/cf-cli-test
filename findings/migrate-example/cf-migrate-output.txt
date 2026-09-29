@@ -1,0 +1,22 @@
+Using the Wrangler bundler because @cloudflare/vite-plugin is not declared. Pass --bundler vite to override.
+Updated 4 file(s):
+├─ cloudflare.config.ts
+├─ wrangler.config.ts
+├─ package.json
+└─ package-lock.json
+
+Follow-up work:
+├─ [required] d1_databases.0: The options `migrations_dir` at `d1_databases.0` require manual migration.
+├─ [required] durable_objects.bindings.0: Durable Object bindings require manual review after migration.
+│  └─ https://developers.cloudflare.com/workers/runtime-apis/context/#exports
+├─ [required] migrations: Wrangler Durable Object migrations are unsupported. Replace them with an exports lifecycle declaration, for example `exports: { MyDurableObject: exports.durableObject({ storage: "sqlite" }) }`.
+│  └─ https://developers.cloudflare.com/workers/runtime-apis/context/#exports
+├─ [required] env.staging.d1_databases.0: The options `migrations_dir` at `env.staging.d1_databases.0` require manual migration.
+├─ [required] env.staging.durable_objects.bindings.0: Durable Object bindings require manual review after migration.
+│  └─ https://developers.cloudflare.com/workers/runtime-apis/context/#exports
+├─ [required] env.staging.migrations: Wrangler Durable Object migrations are unsupported. Replace them with an exports lifecycle declaration, for example `exports: { MyDurableObject: exports.durableObject({ storage: "sqlite" }) }`.
+│  └─ https://developers.cloudflare.com/workers/runtime-apis/context/#exports
+└─ [info] env: Wrangler environments were migrated to a `switch (ctx.mode)` statement. Select one with the `--mode` flag.
+   └─ https://developers.cloudflare.com/workers/wrangler/environments/
+
+⚠ Migration requires follow-up work.

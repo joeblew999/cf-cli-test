@@ -1,0 +1,129 @@
+# D1, KV and R2 by NAME (REMOTE): the IDs cf wants are looked up for you.
+# Local data (what `cf dev` uses) is under local:*.
+
+["db:query"]
+description = "REMOTE: run SQL on a D1 database: mise run db:query <db> '<sql>' (prints a table)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<db>"
+arg "<sql>"
+'''
+run = '''set -eo pipefail
+./node_modules/.bin/cf d1 query "$(node {{config_root}}/scripts/cfx.mjs db-id "$usage_db")" --sql "$usage_sql" | node {{config_root}}/scripts/cfx.mjs table'''
+
+["db:exec"]
+description = "REMOTE: run a .sql file on a D1 database: mise run db:exec <db> <file.sql>"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<db>"
+arg "<file>"
+'''
+run = './node_modules/.bin/cf d1 query "$(node {{config_root}}/scripts/cfx.mjs db-id "$usage_db")" --sql "@$usage_file"'
+
+["db:migrate:new"]
+description = "Create migrations/NNNN_<message>.sql"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<message>"'
+run = './node_modules/.bin/cf d1 migrations create "$usage_message"'
+
+["db:migrate:status"]
+description = "REMOTE: migrations not yet applied to a D1 database"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<db>"'
+run = './node_modules/.bin/cf d1 migrations list "$(node {{config_root}}/scripts/cfx.mjs db-id "$usage_db")"'
+
+["db:migrate"]
+description = "REMOTE: apply pending migrations to a D1 database (cf cannot apply them to the local dev DB)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<db>"'
+run = './node_modules/.bin/cf d1 migrations apply "$(node {{config_root}}/scripts/cfx.mjs db-id "$usage_db")"'
+
+["db:export"]
+description = "REMOTE: dump a D1 database as SQL: mise run db:export <db> > backup.sql"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<db>"'
+run = '''set -eo pipefail
+id=$(node {{config_root}}/scripts/cfx.mjs db-id "$usage_db")
+# The export is cancelled unless it is polled with --current-bookmark until complete.
+url=$(node -e '
+const {execFileSync:x}=require("child_process");const id=process.argv[1];
+const run=a=>JSON.parse(x("./node_modules/.bin/cf",["d1","export",id,"--output-format","polling",...a],{encoding:"utf8",stdio:["ignore","pipe","ignore"]}));
+let r=run([]);for(let i=0;i<60&&r.status!=="complete";i++){if(!r.success)throw new Error(r.error);r=run(["--current-bookmark",r.at_bookmark])}
+console.log(r.result.signed_url)' "$id")
+curl -fsS "$url"'''
+
+["db:bookmark"]
+description = "REMOTE: the D1 time-travel bookmark now (save it before a risky change)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<db>"'
+run = './node_modules/.bin/cf d1 time-travel get-bookmark "$(node {{config_root}}/scripts/cfx.mjs db-id "$usage_db")"'
+
+["kv:put"]
+description = "REMOTE: set one key: mise run kv:put <namespace> <key> <value> [--ttl 60]"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<ns>"
+arg "<key>"
+arg "<value>"
+flag "--ttl <seconds>" help="expire after N seconds (min 60)"
+'''
+run = './node_modules/.bin/cf kv keys put "$usage_key" --namespace-id "$(node {{config_root}}/scripts/cfx.mjs kv-id "$usage_ns")" --body "$usage_value" ${usage_ttl:+--expiration-ttl $usage_ttl}'
+
+["kv:get"]
+description = "REMOTE: read one key as text"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<ns>"
+arg "<key>"
+'''
+run = './node_modules/.bin/cf kv keys get "$usage_key" --namespace-id "$(node {{config_root}}/scripts/cfx.mjs kv-id "$usage_ns")" --text'
+
+["kv:ls"]
+description = "REMOTE: list the keys in a namespace"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<ns>"'
+run = './node_modules/.bin/cf kv keys list --namespace-id "$(node {{config_root}}/scripts/cfx.mjs kv-id "$usage_ns")"'
+
+["kv:rm"]
+description = "REMOTE: delete one key"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<ns>"
+arg "<key>"
+'''
+run = './node_modules/.bin/cf kv keys delete "$usage_key" --namespace-id "$(node {{config_root}}/scripts/cfx.mjs kv-id "$usage_ns")" --force'
+
+["r2:put"]
+description = "REMOTE: upload a file: mise run r2:put <bucket> <key> <file>"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<bucket>"
+arg "<key>"
+arg "<file>"
+'''
+run = './node_modules/.bin/cf r2 objects put "$usage_key" --bucket-name "$usage_bucket" --file "$usage_file"'
+
+["r2:get"]
+description = "REMOTE: download an object to a file: mise run r2:get <bucket> <key> <out>"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<bucket>"
+arg "<key>"
+arg "<out>"
+'''
+run = './node_modules/.bin/cf r2 objects get "$usage_key" --bucket-name "$usage_bucket" > "$usage_out"'
+
+["r2:ls"]
+description = "REMOTE: list objects (size, key)"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = 'arg "<bucket>"'
+run = '''./node_modules/.bin/cf r2 objects list --bucket-name "$usage_bucket" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>JSON.parse(s).forEach(o=>console.log(o.size+"\t"+o.key)))' '''
+
+["r2:rm"]
+description = "REMOTE: delete one object"
+dir = "{{config_root}}/{{env.PROJECT}}"
+usage = '''
+arg "<bucket>"
+arg "<key>"
+'''
+run = './node_modules/.bin/cf r2 objects delete "$usage_key" --bucket-name "$usage_bucket" --force'
