@@ -28,6 +28,11 @@ Where this repo stands (2026-09-29) and what comes next, in order. What's proven
 4. **Worker-to-Worker through service bindings.** Pass `env.X.fetch` as the SDK's `fetch` (no public URL, no `global_fetch_strictly_public`). Not tested yet.
 5. **Put `api/` into `mise run check`.** Typecheck, check that the regenerated spec matches the committed `openapi.json`, then `sdk:gen api` + `sdk:check`.
 6. **CI.** GitHub Actions running `mise run check` (it needs Docker for Fern), plus cargo-dist for CLI releases.
-7. **When oRPC 2.0 ships:** move from `@orpc/experimental-publisher-durable-object` to the stable `DurablePublisher`, and from `.route()` to `.meta(openapi())`.
+7. **Try the oRPC 2.0 beta (`2.0.0-beta.40`) on `api/`, on a branch.** 1.15.4 does everything so far, so this is about getting ready for 2.0 and seeing what it improves. Do it before 2.0 is final.
+   - **Port:** `.route({...})` becomes `.meta(openapi({...}))`, `@orpc/zod/zod4` becomes `@orpc/zod@beta`, and `@orpc/experimental-publisher-durable-object` becomes `DurablePublisher` from `@orpc/publisher` (stable in 2.0). orpc.dev documents the beta API.
+   - **Compare:** is the generated OpenAPI the same or better (the `spec` hook, SSE envelope, operationIds, OpenAPI 3.2 by default)? Does `fern check` pass, and do `sdk:gen api` + `sdk:check` pass?
+   - **Prove:** `api:live-test` 5/5 (SSE, WebSocket, resume), plus the CLI's `notes list --page-all` and `notes watch`.
+   - **Look for:** anything that removes hand-written code, such as whether 2.0 can describe WebSockets so that `asyncapi.yml` goes away.
+   - **Result:** write it up in FINDINGS.md. Stay on 1.15.4 or plan the move for our projects; they run 1.15.4 today.
 8. **Clean the Cloudflare account.** `mise run cleanup` deletes everything in `.cf-manifest.json` (about 40 test Workers and resources, all named `cftest-*`).
 9. **Optional upstream work (outward-facing, needs a go-ahead):** file the `cf` bugs from FINDINGS.md (silent paging, exit 0 on unknown commands, the bulk-secrets no-op, `--dry-run` printing secrets), and propose Forge overlays for name→ID lookups and rollback.
