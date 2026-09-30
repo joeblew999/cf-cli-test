@@ -1,0 +1,1 @@
+{ "extends": "/Users/apple/workspace/go/src/github.com/joeblew999/cf-cli-test/forge/tsconfig.base.json", "include": ["index.ts"] }

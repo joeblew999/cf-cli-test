@@ -1,0 +1,10 @@
+/**
+ * @example
+ *     {}
+ */
+export interface WatchNotesRequest {
+    /** Resume after this note id (the id of the last note you received). Absent: only notes created from now on */
+    after?: string;
+    /** How long to keep the stream open */
+    seconds?: number;
+}

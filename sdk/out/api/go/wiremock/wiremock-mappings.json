@@ -1,0 +1,114 @@
+{
+  "mappings": [
+    {
+      "id": "b44574cc-fe0b-4d92-9aa4-2ab314302908",
+      "name": "Say hello - default",
+      "request": {
+        "urlPathTemplate": "/api/hello",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"message\": \"message\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "b44574cc-fe0b-4d92-9aa4-2ab314302908",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "2361c2a3-6082-41f9-9f4d-833d7d473351",
+      "name": "List notes, newest first (cursor pagination) - default",
+      "request": {
+        "urlPathTemplate": "/api/notes",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"body\": \"body\",\n      \"created_at\": \"created_at\"\n    }\n  ],\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "2361c2a3-6082-41f9-9f4d-833d7d473351",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "6e0a056d-689b-4def-9b8e-b73781d7ad47",
+      "name": "Create a note - default",
+      "request": {
+        "urlPathTemplate": "/api/notes",
+        "method": "POST"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"id\": 1,\n  \"body\": \"body\",\n  \"created_at\": \"created_at\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6e0a056d-689b-4def-9b8e-b73781d7ad47",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "4151ce96-9c09-474e-8c5c-0091faa52de2",
+      "name": "Stream notes as they are created (Server-Sent Events). The stream ends after `seconds`; call again with `after` = the last note id to continue without gaps - default",
+      "request": {
+        "urlPathTemplate": "/api/notes/watch",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "body": "event: message\ndata: {\"id\":1,\"body\":\"body\",\"created_at\":\"created_at\"}\n",
+        "headers": {
+          "Content-Type": "text/event-stream"
+        }
+      },
+      "uuid": "4151ce96-9c09-474e-8c5c-0091faa52de2",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    }
+  ],
+  "meta": {
+    "total": 4
+  }
+}

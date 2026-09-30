@@ -1,0 +1,13 @@
+{
+  "cliVersion": "5.112.0",
+  "generatorName": "fernapi/fern-go-sdk",
+  "generatorVersion": "1.64.0",
+  "generatorConfig": {
+    "module": {
+      "path": "example.com/showcase",
+      "version": "1.22"
+    },
+    "packageName": "showcase"
+  },
+  "invokedBy": "manual"
+}

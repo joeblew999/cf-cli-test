@@ -22,9 +22,4 @@ fuzz/out/
 # The Forge OpenAPI spec (26 MB; mise run mcp:generate downloads it)
 .forge/
 
-# Fern install, generated SDKs/CLIs, and the SDK copy the harness Worker uses (mise run sdk:harness:sync)
-sdk/node_modules/
-sdk/out/
-sdk/.work/
-sdk/harness/src/client/
 target/

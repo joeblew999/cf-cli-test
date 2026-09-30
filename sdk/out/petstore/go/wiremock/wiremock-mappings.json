@@ -1,0 +1,60 @@
+{
+  "mappings": [
+    {
+      "id": "b9ed853f-766d-444f-a293-62384737ad27",
+      "name": "List pets - default",
+      "request": {
+        "urlPathTemplate": "/pets",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"name\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "b9ed853f-766d-444f-a293-62384737ad27",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "5270f983-4f90-4661-af2f-83abab9d4ed7",
+      "name": "Create a pet - default",
+      "request": {
+        "urlPathTemplate": "/pets",
+        "method": "POST"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"id\": 1,\n  \"name\": \"name\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5270f983-4f90-4661-af2f-83abab9d4ed7",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    }
+  ],
+  "meta": {
+    "total": 2
+  }
+}

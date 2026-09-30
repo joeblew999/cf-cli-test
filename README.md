@@ -75,17 +75,9 @@ mise run mcp:bench             # search quality vs cf cli search
 claude mcp add cloudflare-dev -- mise -C /path/to/this/repo run -q mcp:serve
 ```
 
-## SDKs from any OpenAPI spec (Forge + Fern)
-
-`sdk/` generates typed SDKs from any OpenAPI spec, using Cloudflare's own toolchain. It produces TypeScript with Forge, and Go, Python, Java, C#, Ruby, PHP and Swift with Fern. Start with `mise run sdk:doctor`, then `mise run sdk:demo`. See [sdk/README.md](sdk/README.md).
-
-## An oRPC API with real-time (api/)
-
-`api/` is an oRPC 2.0 Worker on D1, contract first. It serves REST, SSE and a WebSocket that don't lose notes across deploys or disconnects (tested live by `mise run api:soak`), and it generates the OpenAPI and AsyncAPI specs that Fern turns into SDKs and a CLI. See [api/README.md](api/README.md), including the **upstream issues** (Fern, oRPC) we work around and `mise run upstream:status`.
-
 ## When cf changes
 
-`mise run check` runs every local check in one go (template loop, SDK generation, the SDK inside workerd). It needs Docker but no account.
+`mise run check` runs every local check in one go (the template loop). It needs no account.
 
 1. Bump `cf` in `template/package.json` and `template-full/package.json`.
 2. `mise run verify`: the local end-to-end check, no account needed.

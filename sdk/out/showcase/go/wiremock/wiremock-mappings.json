@@ -1,0 +1,158 @@
+{
+  "mappings": [
+    {
+      "id": "42b2ed09-5476-41c4-9799-bbbc2bbacce2",
+      "name": "OAuth client-credentials token (used by the SDK itself) - default",
+      "request": {
+        "urlPathTemplate": "/oauth/token",
+        "method": "POST"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"access_token\": \"access_token\",\n  \"expires_in\": 1\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "42b2ed09-5476-41c4-9799-bbbc2bbacce2",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "447d398b-b1c7-4e5b-8ab8-aad46640b27f",
+      "name": "Upload a file (multipart) - default",
+      "request": {
+        "urlPathTemplate": "/files",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"id\": \"id\",\n  \"size\": 1\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "447d398b-b1c7-4e5b-8ab8-aad46640b27f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ab342da3-2526-4031-8f5d-99e74647368c",
+      "name": "List notes (cursor pagination) - default",
+      "request": {
+        "urlPathTemplate": "/notes",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"data\": [\n    {\n      \"id\": \"id\",\n      \"body\": \"body\"\n    }\n  ],\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ab342da3-2526-4031-8f5d-99e74647368c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "1e09a629-bf1d-4039-97bf-ddf4e36d0cf0",
+      "name": "Create a note (idempotent: safe to retry with an Idempotency-Key) - default",
+      "request": {
+        "urlPathTemplate": "/notes",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"id\": \"id\",\n  \"body\": \"body\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "1e09a629-bf1d-4039-97bf-ddf4e36d0cf0",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "4315cf65-bcdd-456f-a321-4714b1ebc02b",
+      "name": "Stream a reply (Server-Sent Events) - default",
+      "request": {
+        "urlPathTemplate": "/chat",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "event: message\ndata: {\"text\":\"text\",\"done\":true}\n",
+        "headers": {
+          "Content-Type": "text/event-stream"
+        }
+      },
+      "uuid": "4315cf65-bcdd-456f-a321-4714b1ebc02b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    }
+  ],
+  "meta": {
+    "total": 5
+  }
+}

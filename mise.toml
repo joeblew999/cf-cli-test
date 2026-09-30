@@ -30,5 +30,4 @@ includes = [
   "tasks/account.toml",
   "tasks/verify.toml",
   "tasks/mcp.toml",
-  "tasks/sdk.toml",
 ]

@@ -1,0 +1,15 @@
+{
+  "cliVersion": "5.140.0",
+  "generatorName": "fernapi/fern-go-sdk",
+  "generatorVersion": "1.64.0",
+  "generatorConfig": {
+    "module": {
+      "path": "example.com/cftestapi",
+      "version": "1.22"
+    },
+    "packageName": "cftestapi"
+  },
+  "originGitCommit": "bd4b5f658a7ec19f0d643d9e76c9aeb6d1665dd4",
+  "originGitCommitIsDirty": true,
+  "invokedBy": "manual"
+}

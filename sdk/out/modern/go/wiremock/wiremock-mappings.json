@@ -1,0 +1,60 @@
+{
+  "mappings": [
+    {
+      "id": "92fa6bb6-ef25-4be6-82aa-b61d5daa8b44",
+      "name": "List notes, a page at a time (cursor pagination) - default",
+      "request": {
+        "urlPathTemplate": "/notes",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"data\": [\n    {\n      \"id\": \"id\",\n      \"body\": \"body\"\n    }\n  ],\n  \"next_cursor\": \"next_cursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "92fa6bb6-ef25-4be6-82aa-b61d5daa8b44",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "5924529e-dd38-46e6-b389-5e4d2efe96fb",
+      "name": "Stream a reply as Server-Sent Events - default",
+      "request": {
+        "urlPathTemplate": "/chat",
+        "method": "POST"
+      },
+      "response": {
+        "status": 200,
+        "body": "event: message\ndata: {\"text\":\"text\",\"done\":true}\n",
+        "headers": {
+          "Content-Type": "text/event-stream"
+        }
+      },
+      "uuid": "5924529e-dd38-46e6-b389-5e4d2efe96fb",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    }
+  ],
+  "meta": {
+    "total": 2
+  }
+}

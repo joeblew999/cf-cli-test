@@ -1,0 +1,13 @@
+{
+  "cliVersion": "5.140.0",
+  "generatorName": "fernapi/fern-go-sdk",
+  "generatorVersion": "1.64.0",
+  "generatorConfig": {
+    "module": {
+      "path": "example.com/petstore",
+      "version": "1.22"
+    },
+    "packageName": "petstore"
+  },
+  "invokedBy": "manual"
+}
