@@ -31,6 +31,7 @@ Where this repo stands (2026-09-29) and what comes next, in order. What's proven
 7. **oRPC 2.0 beta on `api/`: done (branch `orpc-2-beta`, see FINDINGS.md).** Everything passes on `2.0.0-beta.40`. Left to do:
    - Merge when we're happy to run a beta here; move our real projects when 2.0.0 is final.
    - Rebuild the Rust CLI from the regenerated spec (the old binary already works against the 2.0 Worker).
-   - Watch middleapi/orpc#2115 (AsyncAPI); if oRPC can generate it, `asyncapi.yml` goes away.
-8. **Clean the Cloudflare account.** `mise run cleanup` deletes everything in `.cf-manifest.json` (about 40 test Workers and resources, all named `cftest-*`).
-9. **Optional upstream work (outward-facing, needs a go-ahead):** file the `cf` bugs from FINDINGS.md (silent paging, exit 0 on unknown commands, the bulk-secrets no-op, `--dry-run` printing secrets), and propose Forge overlays for name→ID lookups and rollback.
+   - Generate `asyncapi.yml` from the contract: see [asyncapi.md](asyncapi.md) (prototype here, then offer it on middleapi/orpc#2115).
+8. **SSE that holds up on Cloudflare:** see [sse.md](sse.md). Start with the redeploy soak test (is there a silent dead stream after a hub restart?).
+9. **Clean the Cloudflare account.** `mise run cleanup` deletes everything in `.cf-manifest.json` (about 40 test Workers and resources, all named `cftest-*`).
+10. **Optional upstream work (outward-facing, needs a go-ahead):** file the `cf` bugs from FINDINGS.md (silent paging, exit 0 on unknown commands, the bulk-secrets no-op, `--dry-run` printing secrets), and propose Forge overlays for name→ID lookups and rollback.
