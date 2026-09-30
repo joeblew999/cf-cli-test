@@ -1,5 +1,7 @@
 # cloudflare cli test
 
+[![check](https://github.com/joeblew999/cf-cli-test/actions/workflows/check.yml/badge.svg)](https://github.com/joeblew999/cf-cli-test/actions/workflows/check.yml)
+
 The new cli is coming and it's really different. Let's find out!
 
 This repo tests Cloudflare's new [`cf` CLI](https://github.com/cloudflare/cf) (1.0.0-beta.5, open beta). It gives you:

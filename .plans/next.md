@@ -14,4 +14,4 @@ Where this repo stands (2026-09-30) and what comes next, in order. What's proven
 
 1. **Cloudflare account cleaned: done (2026-09-30).** All 40 recorded `cftest-*` resources are deleted, and `mise run cleanup` now handles queue consumers and non-empty R2 buckets.
 2. **cf bugs reported: done (2026-09-30).** The new ones are [cloudflare/cf#99](https://github.com/cloudflare/cf/issues/99)–[cloudflare/cf#106](https://github.com/cloudflare/cf/issues/106), plus a comment on [cloudflare/cf#38](https://github.com/cloudflare/cf/issues/38). Four were already filed by others (#20, #74, #94, #96). The table is in README.md; `mise run upstream:status` shows which are fixed.
-3. **CI.** GitHub Actions running `mise run check`.
+3. **CI: done (2026-09-30).** `.github/workflows/check.yml` runs `mise run check` on every push and pull request (Ubuntu; green).
