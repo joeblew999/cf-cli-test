@@ -1,5 +1,7 @@
 // Versions, gradual releases, promote, rollback and error logs of PROJECT's Worker, all through cf
 // (cf has no `versions deploy` / `rollback` / `tail`: it has the raw deployments API).
+// Upstream: cloudflare/cf#106 (when fixed: `cf workers rollback` replaces the rollback command here)
+// Upstream: cloudflare/cf#20 (when fixed: lists return everything, so drop the --per-page 100)
 // Usage: deploys.mjs versions | release [percent] | promote [version-id] | rollback [version-id] | errors [--since 60m]
 // The Worker is the first `name:` in this project's cloudflare.config.ts (or WORKER=...).
 import { execFileSync } from 'node:child_process';

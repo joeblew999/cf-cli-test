@@ -113,7 +113,7 @@ Default count vs `--per-page 100` count:
 - Nothing was mutated: afterwards there were no `cf-fuzz*` KV namespaces, D1 databases, queues or R2 buckets.
 - Dry-run is purely local. **It doesn't check that the target exists**: deleting ID `000…0` "succeeds" with exit 0. It proves syntax, not effect.
 - **A misleading error:** for commands that *do* exist (`dns records create`, `cache purge`, `workers deployments create`), a bad flag or value gets `┌ Error │ Unknown command: dns records create --zone … └`. It names the whole argv as an "unknown command", not the bad flag.
-- `workers secrets update --dry-run` prints the secret value in plain text in the JSON body. Keep it out of logs.
+- `workers secrets update --dry-run` prints the secret value in plain text in the JSON body. Keep it out of logs. [cloudflare/cf#103](https://github.com/cloudflare/cf/issues/103).
 
 ## 5. Search quality (search.mjs, 25 dev tasks, `cf cli search`, top 5)
 **Top-1: 14/25 correct. Top-5: 21/25.** Two regex hits turned out to be false positives on manual review and are counted as misses here. The average call took about 210 ms.
@@ -142,22 +142,22 @@ Default count vs `--per-page 100` count:
 
 Fast. Startup isn't a problem for agent loops.
 
-## Worst bugs (ready to file upstream)
-1. **Silent truncation of list results.**
+## Worst bugs (reported upstream 2026-09-30; re-checked on 1.0.0-beta.5)
+1. **Silent truncation of list results.** Already reported: [cloudflare/cf#20](https://github.com/cloudflare/cf/issues/20).
    - `cf r2 buckets list` → 20 items; `cf r2 buckets list --per-page 100` → 35. The same happens with `durable-objects namespaces list` (20 vs 30) and `workers list` (10 vs all).
    - There's no indication of truncation on stdout or stderr and no `--all`.
    - Expected: auto-paginate, or print a warning or `result_info` to stderr.
-2. **`--per-page 0` or a negative value silently returns 1 item with exit 0.** `cf workers list --per-page 0` → 1 Worker, exit 0. `--per-page abc` is ignored with exit 0 on `workers list`, but sent as `NaN` elsewhere (`per_page (NaN) is not a number`).
-3. **`cf pages projects list --per-page 100` exits 1**: `[8000024] Invalid list options`. The CLI advertises `--per-page` without the endpoint's max.
-4. **Unknown command + `--help` exits 0.** `cf nosuchthing --help; echo $?` → 0, printing the root help.
-5. **"Unknown command" for existing commands.** `cf cache purge --zone nosuch.invalid --purge-everything --dry-run` → `Error │ Unknown command: cache purge --zone …`, although `cache purge` exists (commands.json). The error should name the bad flag.
-6. **Usage errors put the whole help before the error on stderr.** `cf workers list --nosuchflag 2>&1 | head` shows only help. The error is in the last 3 lines.
-7. **The agent detection changes nothing in the output.** `CLAUDECODE=1 cf d1 list | wc -c` → 5,474, the same as unset. It's still pretty-printed, contrary to the launch post.
-8. **`CLOUDFLARE_PROFILE` is ignored, and `--profile <missing>` reports "No authentication token found"** instead of "profile not found".
-9. **A wrong `CLOUDFLARE_ACCOUNT_ID` reports `[10000] Authentication error`.** It reads like a bad token.
-10. **`cf zero-trust access applications cas list` exits 0 with empty stdout.** Not JSON, so a `jq` pipeline breaks.
-11. **`cf --version` isn't machine-readable**: an emoji banner and a box rule, no bare semver.
-12. **Hand-written mutating commands lack `--dry-run`**: `d1 migrations apply`, `pages deploy`, `previews deploy`, `containers push`, `containers images delete`, `tunnels run`.
+2. **`--per-page 0` or a negative value silently returns 1 item with exit 0.** [cloudflare/cf#99](https://github.com/cloudflare/cf/issues/99). `cf workers list --per-page 0` → 1 Worker, exit 0. `--per-page abc` is ignored with exit 0 on `workers list`, but sent as `NaN` elsewhere (`per_page (NaN) is not a number`).
+3. ([cloudflare/cf#99](https://github.com/cloudflare/cf/issues/99)) **`cf pages projects list --per-page 100` exits 1**: `[8000024] Invalid list options`. The CLI advertises `--per-page` without the endpoint's max.
+4. **Unknown command + `--help` exits 0.** [cloudflare/cf#100](https://github.com/cloudflare/cf/issues/100). `cf nosuchthing --help; echo $?` → 0, printing the root help.
+5. **"Unknown command" for existing commands.** No longer reproduces on 2026-09-30: cf now names the bad flag ("Unknown arguments: purge-everything"). Not reported. `cf cache purge --zone nosuch.invalid --purge-everything --dry-run` → `Error │ Unknown command: cache purge --zone …`, although `cache purge` exists (commands.json). The error should name the bad flag.
+6. **Usage errors put the whole help before the error on stderr.** [cloudflare/cf#100](https://github.com/cloudflare/cf/issues/100). `cf workers list --nosuchflag 2>&1 | head` shows only help. The error is in the last 3 lines.
+7. **The agent detection changes nothing in the output.** [cloudflare/cf#105](https://github.com/cloudflare/cf/issues/105). `CLAUDECODE=1 cf d1 list | wc -c` → 5,474, the same as unset. It's still pretty-printed, contrary to the launch post.
+8. ([cloudflare/cf#101](https://github.com/cloudflare/cf/issues/101)) **`CLOUDFLARE_PROFILE` is ignored, and `--profile <missing>` reports "No authentication token found"** instead of "profile not found".
+9. **A wrong `CLOUDFLARE_ACCOUNT_ID` reports `[10000] Authentication error`.** [cloudflare/cf#101](https://github.com/cloudflare/cf/issues/101). It reads like a bad token.
+10. **`cf zero-trust access applications cas list` exits 0 with empty stdout.** [cloudflare/cf#105](https://github.com/cloudflare/cf/issues/105). Not JSON, so a `jq` pipeline breaks.
+11. ([cloudflare/cf#105](https://github.com/cloudflare/cf/issues/105)) **`cf --version` isn't machine-readable**: an emoji banner and a box rule, no bare semver.
+12. ([cloudflare/cf#104](https://github.com/cloudflare/cf/issues/104)) **Hand-written mutating commands lack `--dry-run`**: `d1 migrations apply`, `pages deploy`, `previews deploy`, `containers push`, `containers images delete`, `tunnels run`.
 
 ## Implications for mise tasks (wrappers needed)
 - **`cf-json` wrapper** (the main one), for every read an agent or script consumes:

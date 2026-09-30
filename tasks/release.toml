@@ -32,6 +32,7 @@ usage = 'arg "[version]"'
 run = 'WORKER="$(node {{config_root}}/scripts/cfx.mjs worker)" node {{config_root}}/scripts/deploys.mjs promote ${usage_version:-}'
 
 [rollback]
+# Upstream: cloudflare/cf#106 (when fixed: call `cf workers rollback`)
 description = "REMOTE: send 100% of traffic back to the previous version, or to a given one (cf has no rollback command)"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = 'arg "[version]"'
@@ -44,6 +45,7 @@ usage = 'arg "<name>"'
 run = './node_modules/.bin/cf previews deploy "$usage_name"'
 
 [logs]
+# Upstream: cloudflare/cf#68 (when fixed: use `cf workers tail` for live logs)
 description = "REMOTE, read only: recent logs of the Worker (cf has no live tail; needs observability: { enabled: true })"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = '''

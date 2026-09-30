@@ -75,6 +75,26 @@ mise run mcp:bench             # search quality vs cf cli search
 claude mcp add cloudflare-dev -- mise -C /path/to/this/repo run -q mcp:serve
 ```
 
+## Reported upstream
+
+The bugs and gaps found here, as cf issues. Each workaround in the tasks and scripts is tagged `Upstream: cloudflare/cf#<n> (when fixed: ...)`, and `mise run upstream:status` shows which issues are closed, meaning that workaround can go.
+
+| Issue | What | Workaround here |
+|---|---|---|
+| [cloudflare/cf#20](https://github.com/cloudflare/cf/issues/20) (existing) | Lists silently return only the first page | every list passes `--per-page 100` |
+| [cloudflare/cf#38](https://github.com/cloudflare/cf/issues/38) (commented) | Commands take IDs, not names | `cfx.mjs db-id` / `kv-id`; cleanup looks IDs up by name |
+| [cloudflare/cf#68](https://github.com/cloudflare/cf/issues/68) (existing) | No live `tail` | `mise run logs` (Workers Logs) |
+| [cloudflare/cf#74](https://github.com/cloudflare/cf/issues/74) (existing) | `r2 objects bulk-delete` can't empty a bucket | cleanup deletes objects one by one |
+| [cloudflare/cf#94](https://github.com/cloudflare/cf/issues/94) (existing) | An aborted delete exits 0 | `secret:rm` and cleanup pass `--force` |
+| [cloudflare/cf#99](https://github.com/cloudflare/cf/issues/99) | `--per-page` not validated; maximums not advertised | none |
+| [cloudflare/cf#100](https://github.com/cloudflare/cf/issues/100) | `cf <unknown> --help` exits 0; the error comes after the whole help | none |
+| [cloudflare/cf#101](https://github.com/cloudflare/cf/issues/101) | Misleading auth errors (profile, account id) | none |
+| [cloudflare/cf#102](https://github.com/cloudflare/cf/issues/102) | `secrets bulk` no-ops on the plain shape; invalid secret names accepted | `mise run secret:push` sends `{"secrets":{...}}` |
+| [cloudflare/cf#103](https://github.com/cloudflare/cf/issues/103) | `--dry-run` prints secret values | none (keep secret dry-runs out of logs) |
+| [cloudflare/cf#104](https://github.com/cloudflare/cf/issues/104) | No `--dry-run` on hand-written mutating commands; deploy dry-run skips secret checks | none |
+| [cloudflare/cf#105](https://github.com/cloudflare/cf/issues/105) | Output for scripts and agents (empty stdout, `--version`, agent mode) | none |
+| [cloudflare/cf#106](https://github.com/cloudflare/cf/issues/106) | No rollback command | `mise run rollback` |
+
 ## When cf changes
 
 `mise run check` runs every local check in one go (the template loop). It needs no account.

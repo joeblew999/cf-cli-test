@@ -11,6 +11,8 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+// Upstream: cloudflare/cf#20 (when fixed: lists return everything, so drop the --per-page 100)
+// Upstream: cloudflare/cf#38 (when fixed: pass names where cf wants ids, so db-id / kv-id can go)
 const cf = (...args) => execFileSync('./node_modules/.bin/cf', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 const fail = message => { console.error(message); process.exit(1); };
 const [command, name] = process.argv.slice(2);

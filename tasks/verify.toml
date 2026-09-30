@@ -34,3 +34,22 @@ rm -f /tmp/check-$$.log
 [ "$failed" = 0 ] && echo "All local checks passed." || echo "Some checks FAILED."
 exit $failed
 '''
+
+["upstream:status"]
+description = "cf issues our tasks work around (every `Upstream: <repo>#<n>` tag) and their state: CLOSED means that workaround can go (list in README.md)"
+run = '''
+set -euo pipefail
+tags=$(git grep -n -o -E 'Upstream: [A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+.*' -- ':!*.md')
+issues=$(echo "$tags" | grep -o -E '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+' | sort -u)
+total=0; closed=0
+for issue in $issues; do
+  total=$((total + 1))
+  info=$(gh api "repos/${issue%#*}/issues/${issue#*#}" --jq '.state + "\t" + .title' 2>/dev/null || printf 'unreachable\t')
+  state=${info%%$'\t'*}; title=${info#*$'\t'}
+  [ "$state" = closed ] && closed=$((closed + 1))
+  echo "$(echo "$state" | tr '[:lower:]' '[:upper:]')  $issue  $title"
+  echo "$tags" | grep -F "Upstream: $issue " | sed -E 's/^([^:]+:[0-9]+):Upstream: [^ ]+ *(.*)$/        \1  \2/'
+done
+echo
+echo "$total upstream issues, $closed closed$([ "$closed" -gt 0 ] && echo ': remove those workarounds' || true)"
+'''

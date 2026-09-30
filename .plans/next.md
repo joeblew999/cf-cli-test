@@ -13,5 +13,5 @@ Where this repo stands (2026-09-30) and what comes next, in order. What's proven
 ## Next
 
 1. **Cloudflare account cleaned: done (2026-09-30).** All 40 recorded `cftest-*` resources are deleted, and `mise run cleanup` now handles queue consumers and non-empty R2 buckets.
-2. **Optional upstream work (outward-facing, needs a go-ahead):** file the `cf` bugs from FINDINGS.md (silent paging, exit 0 on unknown commands, the bulk-secrets no-op, `--dry-run` printing secrets, `r2 objects bulk-delete` demanding `--body` for its no-body modes), and propose Forge overlays for name→ID lookups and rollback.
+2. **cf bugs reported: done (2026-09-30).** The new ones are [cloudflare/cf#99](https://github.com/cloudflare/cf/issues/99)–[cloudflare/cf#106](https://github.com/cloudflare/cf/issues/106), plus a comment on [cloudflare/cf#38](https://github.com/cloudflare/cf/issues/38). Four were already filed by others (#20, #74, #94, #96). The table is in README.md; `mise run upstream:status` shows which are fixed.
 3. **CI.** GitHub Actions running `mise run check`.

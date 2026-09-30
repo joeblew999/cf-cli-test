@@ -64,12 +64,12 @@ The Worker returns `{mode, settings, apiKeySet, apiKeyLen, apiKeyPrefix}`, so ea
   - `env.MODE.get("x")` → TS2339 on type 'string'.
 
 ## Bugs / gaps (with repro)
-1. **`secrets bulk` silently no-ops on the documented RFC 7396 shape.** `cf workers secrets bulk --worker W --body '{"API_KEY":{"type":"secret_text","text":"v"}}'` returns 200 and exit 0. The response lists the bindings, but the value is unchanged (checked over 20 s). Only `{"secrets":{...}}` applies. The same happens with `--file` holding the plain shape. A `.env` file passed to `--file` → `[10026] Could not parse request body`. The help text doesn't show the body shape, and `cf schema workers secrets bulk` shows `requestBodyFields: []`.
-2. **`cf deploy --dry-run` does not check required secrets.** `cf deploy --mode qa --dry-run` (a new Worker, no secret) → "Dry run complete", exit 0. The real deploy then fails. The dry-run bindings table also leaves out `API_KEY`.
+1. ([cloudflare/cf#102](https://github.com/cloudflare/cf/issues/102)) **`secrets bulk` silently no-ops on the documented RFC 7396 shape.** `cf workers secrets bulk --worker W --body '{"API_KEY":{"type":"secret_text","text":"v"}}'` returns 200 and exit 0. The response lists the bindings, but the value is unchanged (checked over 20 s). Only `{"secrets":{...}}` applies. The same happens with `--file` holding the plain shape. A `.env` file passed to `--file` → `[10026] Could not parse request body`. The help text doesn't show the body shape, and `cf schema workers secrets bulk` shows `requestBodyFields: []`.
+2. ([cloudflare/cf#104](https://github.com/cloudflare/cf/issues/104)) **`cf deploy --dry-run` does not check required secrets.** `cf deploy --mode qa --dry-run` (a new Worker, no secret) → "Dry run complete", exit 0. The real deploy then fails. The dry-run bindings table also leaves out `API_KEY`.
 3. **The type says a secret is always there; locally it isn't.** `env.API_KEY` is typed `string`, but it is `undefined` in `cf dev` when missing (only a warning).
 4. **`secrets` commands ignore the project config**: `--worker` is required, `-m` has no effect.
-5. **`secrets update` accepts invalid names**: `"bad-name!"` was created (exit 0), though the help says "A JavaScript variable name". It can be deleted again with `delete "bad-name!" -f`.
-6. **An aborted `delete` exits 0.** Scripts can't tell it was aborted; use `--force`.
+5. ([cloudflare/cf#102](https://github.com/cloudflare/cf/issues/102)) **`secrets update` accepts invalid names**: `"bad-name!"` was created (exit 0), though the help says "A JavaScript variable name". It can be deleted again with `delete "bad-name!" -f`.
+6. (already reported: [cloudflare/cf#94](https://github.com/cloudflare/cf/issues/94)) **An aborted `delete` exits 0.** Scripts can't tell it was aborted; use `--force`.
 7. The missing-secret error tells you to use `wrangler secret put` / `wrangler deploy --secrets-file`.
 8. The deploy bindings table labels secrets "Environment Variable".
 

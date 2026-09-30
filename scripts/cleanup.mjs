@@ -14,6 +14,8 @@ let entries = JSON.parse(readFileSync(manifest, 'utf8'));
 
 const cf = (...args) => execFileSync('cf', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 // Lists page at 10 by default without saying so: always ask for the maximum.
+// Upstream: cloudflare/cf#20 (when fixed: lists return everything, so drop the --per-page 100)
+// Upstream: cloudflare/cf#38 (when fixed: delete by name, so the ids lookups can go)
 const list = (...args) => JSON.parse(cf(...args, '--per-page', '100'));
 
 const ids = {
@@ -33,7 +35,7 @@ const remove = {
   workflow: id => cf('workflows', 'delete', id, '--force'),
 };
 
-// cf prints API errors on stdout, not stderr.
+// cf's error box on stderr starts with a blank line: find the "[code] message" line instead.
 const why = error => ((error.stderr || '') + (error.stdout || '') || error.message).match(/\[\d+\][^\n]*/)?.[0] ?? (error.stderr || error.stdout || error.message).trim().split('\n')[0];
 
 // Queue consumers first: they block deleting both their Worker and the queue.
@@ -51,6 +53,7 @@ for (const entry of entries.filter(e => e.kind === 'queue')) {
 }
 
 // An R2 bucket must be empty before it can be deleted.
+// Upstream: cloudflare/cf#74 (when fixed: one `cf r2 objects bulk-delete --prefix ""` empties the bucket)
 const emptyBucket = name => {
   for (const { key } of list('r2', 'objects', 'list', '--bucket-name', name)) cf('r2', 'objects', 'delete', key, '--bucket-name', name, '--force');
 };
