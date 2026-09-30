@@ -1,10 +1,12 @@
 # What this repo has on the Cloudflare account, and removing it.
 
 [resources]
+shell = "bash -o errexit -c"
 description = "Everything deploys and tests created on the account (.cf-manifest.json)"
 run = "cat .cf-manifest.json 2>/dev/null || echo 'nothing recorded'"
 
 [cleanup]
+shell = "bash -o errexit -c"
 description = "REMOTE: delete everything in .cf-manifest.json (Workers first), by exact name; nothing else"
 dir = "{{config_root}}"
 run = "node {{config_root}}/scripts/cleanup.mjs"

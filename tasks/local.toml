@@ -3,12 +3,14 @@
 # Local resources are named <BINDING>-<worker>, e.g. DB-hello; keys are URL-encoded.
 
 ["local:db:migrate"]
+shell = "bash -o errexit -c"
 description = "LOCAL: apply migrations/*.sql to the dev D1 (each once; cf can't migrate the local DB)"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = 'arg "[binding]" default="DB"'
 run = 'node {{config_root}}/scripts/local-migrate.mjs "$(node {{config_root}}/scripts/cfx.mjs worker)" "$usage_binding"'
 
 ["local:db"]
+shell = "bash -o errexit -c"
 description = "LOCAL: run SQL on the dev D1 by binding: mise run local:db DB '<sql>'"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = '''
@@ -21,6 +23,7 @@ curl -fsS -X POST "http://localhost:$PORT/cdn-cgi/local/explorer/api/d1/database
   | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const r of JSON.parse(s).result){const {columns,rows}=r.results;console.table(rows.map(x=>Object.fromEntries(columns.map((c,i)=>[c,x[i]]))))}})' '''
 
 ["local:kv:put"]
+shell = "bash -o errexit -c"
 description = "LOCAL: set a key in the dev KV by binding: mise run local:kv:put KV <key> <value>"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = '''
@@ -32,6 +35,7 @@ run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker); K=$(node -p 'encodeUR
 curl -fsS -X PUT "http://localhost:$PORT/cdn-cgi/local/explorer/api/storage/kv/namespaces/$usage_binding-$W/values/$K" --data-binary "$usage_value"; echo'''
 
 ["local:kv:get"]
+shell = "bash -o errexit -c"
 description = "LOCAL: read a key from the dev KV by binding"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = '''
@@ -42,6 +46,7 @@ run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker); K=$(node -p 'encodeUR
 curl -fsS "http://localhost:$PORT/cdn-cgi/local/explorer/api/storage/kv/namespaces/$usage_binding-$W/values/$K"; echo'''
 
 ["local:r2:put"]
+shell = "bash -o errexit -c"
 description = "LOCAL: upload a file into the dev R2 by binding: mise run local:r2:put BUCKET <key> <file>"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = '''
@@ -53,6 +58,7 @@ run = '''W=$(node {{config_root}}/scripts/cfx.mjs worker); K=$(node -p 'encodeUR
 curl -fsS -X PUT "http://localhost:$PORT/cdn-cgi/local/explorer/api/r2/buckets/$usage_binding-$W/objects/$K" --data-binary "@$usage_file"; echo'''
 
 ["local:r2:ls"]
+shell = "bash -o errexit -c"
 description = "LOCAL: list objects in the dev R2 by binding"
 dir = "{{config_root}}/{{env.PROJECT}}"
 usage = 'arg "<binding>"'

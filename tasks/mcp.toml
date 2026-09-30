@@ -3,6 +3,7 @@
 # instead of cf's 2,936 (~4 MB). See mcp/.
 
 ["mcp:generate"]
+shell = "bash -o errexit -c"
 description = "Download the pinned Forge OpenAPI spec (26 MB, into .forge/) and regenerate mcp/tools.json. FORGE_OPENAPI=<sha> for another release"
 run = """
 set -euo pipefail
@@ -13,14 +14,17 @@ node mcp/generate.mjs ".forge/$sha.json"
 """
 
 ["mcp:smoke"]
+shell = "bash -o errexit -c"
 description = "REMOTE, read only: start the MCP server over stdio and check initialize, tools/list and real API calls: mise run mcp:smoke [d1-name]"
 usage = 'arg "[db]" help="a D1 database to run SELECT 1 on"'
 run = 'node mcp/smoke.mjs ${usage_db:-}'
 
 ["mcp:serve"]
+shell = "bash -o errexit -c"
 description = "Run the MCP server on stdio (for an MCP client). Uses CLOUDFLARE_API_TOKEN or the cf login"
 run = "node mcp/server.mjs"
 
 ["mcp:bench"]
+shell = "bash -o errexit -c"
 description = "READ ONLY: search benchmark, `cf cli search` vs the MCP server's search, on the same tasks (top-1 / top-5)"
 run = "node mcp/bench.mjs"

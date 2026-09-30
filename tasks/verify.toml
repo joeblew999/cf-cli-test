@@ -1,14 +1,17 @@
 # Re-run the evaluation when cf changes: bump the cf version in template/package.json, then run these.
 
 [verify]
+shell = "bash -o errexit -c"
 description = "Local end-to-end check of the template and tasks (no account): new -> types -> tests -> dev -> local D1 migration -> API"
 run = "bash {{config_root}}/scripts/verify.sh local"
 
 ["verify:remote"]
+shell = "bash -o errexit -c"
 description = "REMOTE: deploy the verify project as cftest-verify and check the live API, D1, KV, versions and logs (run verify first; cleanup after)"
 run = "bash {{config_root}}/scripts/verify.sh remote"
 
 [fuzz]
+shell = "bash -o errexit -c"
 description = "READ-ONLY fuzz of cf itself (PROJECT's cf): random list/get commands, paging, search quality, dry runs, output modes -> fuzz/out/"
 run = """
 set -uo pipefail
@@ -22,6 +25,7 @@ bash output-modes.sh > out/output-modes.txt && echo "output modes -> fuzz/out/ou
 """
 
 [check]
+shell = "bash -o errexit -c"
 description = "Every LOCAL check in one go (no Cloudflare account): the template loop (verify)"
 run = '''
 set -uo pipefail
@@ -36,6 +40,7 @@ exit $failed
 '''
 
 ["upstream:status"]
+shell = "bash -o errexit -c"
 description = "cf issues our tasks work around (every `Upstream: <repo>#<n>` tag) and their state: CLOSED means that workaround can go (list in README.md)"
 run = '''
 set -euo pipefail

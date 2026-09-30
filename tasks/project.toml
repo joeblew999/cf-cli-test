@@ -1,6 +1,7 @@
 # The local loop: no Cloudflare account needed. MODE picks the config branch (ctx.mode).
 
 [new]
+shell = "bash -o errexit -c"
 description = "New project from template/ (SPA + /api, D1, KV), or --full: template-full/ (+ DO, queue, cron, workflow, AI, R2): mise run new <dir>"
 usage = '''
 arg "<dir>"
@@ -19,6 +20,7 @@ echo "Created $usage_dir from $from/ (Worker $name). Next: PROJECT=$usage_dir mi
 """
 
 [init]
+shell = "bash -o errexit -c"
 description = "cf's own minimal scaffold (cf init) into <dir>, with the dev port taken from PORT"
 usage = 'arg "<dir>"'
 run = """
@@ -30,42 +32,50 @@ node {{config_root}}/scripts/cfx.mjs port "$usage_dir/vite.config.ts"
 """
 
 [install]
+shell = "bash -o errexit -c"
 description = "Install PROJECT's dependencies (its pinned cf) and show the cf version"
 dir = "{{config_root}}/{{env.PROJECT}}"
 run = ["npm install --no-fund --no-audit", "./node_modules/.bin/cf --version"]
 
 [dev]
+shell = "bash -o errexit -c"
 description = "Local dev server for PROJECT on PORT in MODE (default development). Secrets: .dev.vars.<MODE>, .dev.vars or .env*"
 dir = "{{config_root}}/{{env.PROJECT}}"
 run = './node_modules/.bin/cf dev --mode "${MODE:-development}"'
 
 [build]
+shell = "bash -o errexit -c"
 description = "Build PROJECT in MODE (default production) into .cloudflare/output/"
 dir = "{{config_root}}/{{env.PROJECT}}"
 run = './node_modules/.bin/cf build --mode "${MODE:-production}"'
 
 [types]
+shell = "bash -o errexit -c"
 description = "Generate the typed env from cloudflare.config.ts and typecheck (catches wrong binding use)"
 dir = "{{config_root}}/{{env.PROJECT}}"
 run = ["./node_modules/.bin/cf workers types", "npx tsc --noEmit"]
 
 [test]
+shell = "bash -o errexit -c"
 description = "Run PROJECT's tests (vitest + pool-workers; it ignores cloudflare.config.ts, so vitest.config.ts restates the bindings)"
 dir = "{{config_root}}/{{env.PROJECT}}"
 run = "npx vitest run"
 
 [check]
+shell = "bash -o errexit -c"
 description = "Profile PROJECT's Worker startup time (writes worker-startup.cpuprofile)"
 dir = "{{config_root}}/{{env.PROJECT}}"
 run = "./node_modules/.bin/cf workers check"
 
 [migrate]
+shell = "bash -o errexit -c"
 description = "Convert PROJECT's wrangler.jsonc to cloudflare.config.ts (needs local wrangler 4.100+). Resolve its TODOs, then switch package.json scripts to cf"
 dir = "{{config_root}}/{{env.PROJECT}}"
 raw_args = true
 run = "./node_modules/.bin/cf migrate"
 
 ["worker:name"]
+shell = "bash -o errexit -c"
 description = "The Worker name PROJECT's config resolves to in MODE (builds once)"
 dir = "{{config_root}}/{{env.PROJECT}}"
 run = "node {{config_root}}/scripts/cfx.mjs worker"
