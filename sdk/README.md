@@ -82,7 +82,7 @@ Building is **heavy** the first time:
 
 ## From an oRPC Worker (api/) to SDKs and a CLI (verified 2026-09-29)
 
-`api/` is an oRPC 1.15.4 Worker, contract first (`api/src/contract.ts`: routes plus Zod 4 schemas). It's implemented on D1 and serves `/api/openapi.json`. The chain:
+`api/` is an oRPC 2.0 (`2.0.0-beta.40`) Worker, contract first (`api/src/contract.ts`: routes plus Zod 4 schemas). It's implemented on D1 and serves `/api/openapi.json`. The chain:
 
 ```sh
 mise run api:spec                  # contract -> sdk/fern/apis/api/openapi.json (offline; server = deployed URL)
@@ -93,13 +93,13 @@ mise run api:live-test             # SSE + WebSocket (Durable Object), raw and t
 ```
 
 - **Results:** the Go SDK (build, vet, tests) and the TypeScript SDK (typecheck) both pass. The CLI runs against the live Worker: `meta hello`, `notes create`, and `notes list --page-all` across pages.
-- **What Fern needs is declared in the oRPC contract,** with no overlay. Each route's `operationId`, `tags` and `spec` hook (stable 1.15.4) add the SDK group and method names, `x-fern-pagination`, `x-fern-streaming`, and the SSE note schema to the generated operation. The only hand-written spec left in `sdk/fern/apis/api/` is `asyncapi.yml`, because oRPC generates OpenAPI, not AsyncAPI.
+- **What Fern needs is declared in the oRPC contract,** with no overlay. Each route's `openapi({ operationId, tags, spec })` metadata adds the SDK group and method names, `x-fern-pagination`, `x-fern-streaming`, and the SSE note schema to the generated operation. The only hand-written spec left in `sdk/fern/apis/api/` is `asyncapi.yml`, because oRPC generates OpenAPI, not AsyncAPI.
 - **Make cursors strings in the contract:** with a numeric `next_cursor`, the CLI's `--page-all` stopped after page one.
-- **Real-time, verified live (`mise run api:live-test`, 5/5):** `NotesHub` is **oRPC's `PublisherDurableObject`** (`@orpc/experimental-publisher-durable-object` 1.15.4, experimental in 1.x; `DurablePublisher` in 2.0). `notes.create` publishes each note.
+- **Real-time, verified live (`mise run api:live-test`, 5/5):** `NotesHub` is **oRPC's `DurablePublisherObject`** (`@orpc/cloudflare`; subscribers are hibernatable WebSockets). `notes.create` publishes each note.
   - **SSE:** `notes.watch` is a `publisher.subscribe()` loop. It reaches the Go SDK (`Watch`), the TypeScript SDK (`notes.watch()`) and the CLI (`notes watch`).
   - **Resume:** the publisher keeps 60 s of events, so a client reconnecting with `Last-Event-ID` gets the notes it missed (verified). That covers a redeploy restarting the DO.
   - **WebSockets:** `/api/notes/live` is held by the Worker, which forwards published notes as plain JSON. The publisher's own socket protocol is oRPC's, and Fern's TypeScript client needs plain messages. Only the TypeScript SDK gets a client (`liveNotes.connect()`).
-  - **The 2.0 beta isn't needed:** the `spec` hook and the Durable Object publisher are both in stable 1.15.4.
+  - **OpenAPI version:** 2.0 defaults to 3.2.0, which `fern check` rejects, so `spec.ts` and the Worker ask for 3.1.1.
 - **Where output goes:** here, `sdk/out/` (gitignored). For real use, SDKs ship as packages or repos (npm, a Go module repo, CLI releases). Fern's `output: location: github` can write to those repos.
 
 Everything runs through mise from the repo root:

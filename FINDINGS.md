@@ -179,3 +179,16 @@ Source project: a classic `wrangler.jsonc` with vars (including JSON), KV, D1 (m
   - WebSocket clients get notes forwarded by the Worker as plain JSON.
   - `api:live-test` passes 5/5.
 - The CLI's `--page-all` with `--format jsonl` prints one line per page, not per item.
+
+## oRPC 2.0 beta on api/ (2.0.0-beta.40, verified 2026-09-30)
+- The port is small. `.route({...})` becomes `.meta(openapi({...}))` from `@orpc/openapi`, `eventIterator` becomes `asyncIteratorObject`, and `@orpc/zod/zod4` becomes `@orpc/zod`. On the generator, `schemaConverters` becomes `converters` and `info`/`servers` move under `base`.
+- The Durable Object publisher is in **`@orpc/cloudflare`**, not `@orpc/publisher`: `PublisherDurableObject` becomes `DurablePublisherObject`, and `{ retentionSeconds: 60 }` becomes `{ enabled: true, seconds: 60 }`.
+- 2.0 generates **OpenAPI 3.2.0 by default, and `fern check` rejects it** ("Unsupported OpenAPI version: 3.2.0"). Pass `version: "3.1.1"`. With that, the spec matches the 1.15.4 one except that output objects now carry `additionalProperties: false`.
+- Even at 3.2.0, oRPC describes SSE as its envelope (`event: message|close|error`) under `schema`, not with 3.2's `itemSchema`. The contract's `spec` hook that gives Fern the note schema is still needed. The stream's end event is now `close`; it was `done` in 1.x.
+- Everything passes on 2.0:
+  - `fern check`;
+  - `sdk:gen api go|typescript` + `sdk:check` (Go build, vet, tests; TypeScript typecheck);
+  - `api:live-test` 5/5 live (SSE, WebSocket, resume, plus the TypeScript SDK);
+  - the CLI's `notes list --page-all` and `notes watch`, against the deployed Worker.
+- Hibernation: `DurablePublisherObject` accepts subscribers with `ctx.acceptWebSocket` (the hibernatable API) and keeps its state in SQLite plus an alarm, so the DO can sleep between events. SSE streams and `/api/notes/live` sockets are held by the Worker, which bills CPU time, not wall time, and connects to the DO as a WebSocket client.
+- 2.0 doesn't remove `asyncapi.yml`: no oRPC package generates AsyncAPI (asked upstream in middleapi/orpc#2115). `@orpc/hibernation` gives hibernatable WebSockets that speak oRPC's RPC protocol, not the plain JSON messages Fern's WebSocket client expects.

@@ -18,12 +18,11 @@
 		"vitest": "^4.1.11"
 	},
 	"dependencies": {
-		"@orpc/contract": "^1.15.4",
-		"@orpc/experimental-publisher": "^1.15.4",
-		"@orpc/experimental-publisher-durable-object": "^1.15.4",
-		"@orpc/openapi": "^1.15.4",
-		"@orpc/server": "^1.15.4",
-		"@orpc/zod": "^1.15.4",
+		"@orpc/cloudflare": "2.0.0-beta.40",
+		"@orpc/contract": "2.0.0-beta.40",
+		"@orpc/openapi": "2.0.0-beta.40",
+		"@orpc/server": "2.0.0-beta.40",
+		"@orpc/zod": "2.0.0-beta.40",
 		"zod": "^4.6.5"
 	}
 }

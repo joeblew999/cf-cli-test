@@ -1,9 +1,9 @@
 import { env } from "cloudflare:workers";
 import { OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { DurablePublisher } from "@orpc/experimental-publisher-durable-object";
+import { DurablePublisher } from "@orpc/cloudflare";
 import { implement } from "@orpc/server";
-import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { ZodToJsonSchemaConverter } from "@orpc/zod";
 import type { z } from "zod";
 import { contract, info, type note } from "./contract.ts";
 export { NotesHub } from "./hub.ts";
@@ -65,7 +65,7 @@ export default {
 		const url = new URL(request.url);
 		// The spec, generated from the same router: what sdk/fern/apis/api/openapi.json is made from.
 		if (url.pathname === "/api/openapi.json") {
-			const spec = await new OpenAPIGenerator({ schemaConverters: [new ZodToJsonSchemaConverter()] }).generate(router, { info, servers: [{ url: url.origin }] });
+			const spec = await new OpenAPIGenerator({ converters: [new ZodToJsonSchemaConverter()] }).generate(router, { version: "3.1.1", base: { info, servers: [{ url: url.origin }] } });
 			return Response.json(spec);
 		}
 		if (url.pathname === "/api/notes/live") return live(request);

@@ -32,7 +32,8 @@
                   },
                   "required": [
                     "message"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -51,23 +52,23 @@
         ],
         "parameters": [
           {
-            "name": "cursor",
             "in": "query",
+            "name": "cursor",
             "schema": {
-              "type": "string",
-              "description": "Opaque cursor from the previous page's next_cursor"
+              "description": "Opaque cursor from the previous page's next_cursor",
+              "type": "string"
             },
             "allowEmptyValue": true,
             "allowReserved": true
           },
           {
-            "name": "limit",
             "in": "query",
+            "name": "limit",
             "schema": {
+              "default": 20,
               "type": "integer",
               "minimum": 1,
-              "maximum": 100,
-              "default": 20
+              "maximum": 100
             },
             "allowEmptyValue": true,
             "allowReserved": true
@@ -102,17 +103,19 @@
                           "id",
                           "body",
                           "created_at"
-                        ]
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "next_cursor": {
-                      "type": "string",
-                      "description": "Pass as cursor for the next page; absent on the last page"
+                      "description": "Pass as cursor for the next page; absent on the last page",
+                      "type": "string"
                     }
                   },
                   "required": [
                     "data"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -175,7 +178,8 @@
                     "id",
                     "body",
                     "created_at"
-                  ]
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -194,14 +198,14 @@
         ],
         "parameters": [
           {
-            "name": "seconds",
             "in": "query",
+            "name": "seconds",
             "schema": {
+              "default": 30,
+              "description": "How long to keep the stream open",
               "type": "integer",
               "minimum": 1,
-              "maximum": 300,
-              "default": 30,
-              "description": "How long to keep the stream open"
+              "maximum": 300
             },
             "allowEmptyValue": true,
             "allowReserved": true
