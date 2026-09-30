@@ -6,5 +6,5 @@ run = "cat .cf-manifest.json 2>/dev/null || echo 'nothing recorded'"
 
 [cleanup]
 description = "REMOTE: delete everything in .cf-manifest.json (Workers first), by exact name; nothing else"
-dir = "{{config_root}}/{{env.PROJECT}}"
+dir = "{{config_root}}"
 run = "node {{config_root}}/scripts/cleanup.mjs"

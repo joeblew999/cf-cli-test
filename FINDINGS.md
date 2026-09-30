@@ -51,6 +51,11 @@ cf 1.0.0-beta.5, node 24, macOS arm64. Started 2026-09-29. Only what was run and
 - **No `tail`** (live logs). `cf workers` has no tail subcommand, and the repo's own `usecases/tail-live-worker.yaml` says `status: gap`.
 - The repo's use-case catalogue (usecases/*.yaml) counts 96 direct, 153 partial and 58 gap. **It's stale**: it lists KV/D1/R2 provisioning and `r2 object get` as gaps, but both work.
 - Search misses: "roll back a worker to a previous version" → nothing relevant. "get a value from a kv namespace" → only bulk get.
+- **Cleanup order matters, and cf doesn't say so up front** (verified 2026-09-30, deleting 40 test resources):
+  - A Worker that consumes a queue can't be deleted (`[10064] Cannot delete this Worker as it is a consumer for a Queue`), and the queue can't be deleted while the Worker binds it (`[11005]`). Remove the consumer first: `cf queues consumers delete <consumer-id> --queue-id <id>` (ids from `cf queues get`).
+  - A non-empty R2 bucket can't be deleted (`[10008]`).
+- **`cf r2 objects bulk-delete` can't empty a bucket or delete by prefix.** Its help documents both modes as "no request body", yet cf refuses to run without `--body` ("--body is required for this command"). Deleting objects one by one with `cf r2 objects delete <key> --bucket-name <b>` works.
+- **API errors go to stdout, not stderr**, e.g. the `┌ APIError … [code] message` box. A wrapper that reads only stderr shows an empty error (`mise run cleanup` did until it was fixed).
 
 ## Migration: Wrangler → cf (files: findings/migrate-example/)
 Source project: a classic `wrangler.jsonc` with vars (including JSON), KV, D1 (migrations_dir), R2, a SQLite Durable Object with Wrangler migrations, a cron, static assets (run_worker_first /api/*) and an `env.staging`. It was deployed first with Wrangler as `cftest-legacy`.
