@@ -1,10 +1,6 @@
 import { DurablePublisherObject } from "@orpc/cloudflare";
 
-// The pub/sub hub for new notes: oRPC's Durable Object publisher. It holds subscribers over hibernating
-// WebSockets and keeps 60 s of events, so a client that reconnects with its last event id gets what it
-// missed (e.g. across a redeploy).
-export class NotesHub extends DurablePublisherObject {
-	constructor(ctx: DurableObjectState, env: Env) {
-		super(ctx, env, { resume: { enabled: true, seconds: 60 } });
-	}
-}
+// The live fan-out for new notes: oRPC's Durable Object publisher. Subscribers (the Worker's follow()
+// loops) are hibernatable WebSockets, so the hub sleeps between notes. It keeps no resume log: D1 is
+// the log and follow() catches up from it, so the hub may restart at any time (.plans/realtime.md).
+export class NotesHub extends DurablePublisherObject {}

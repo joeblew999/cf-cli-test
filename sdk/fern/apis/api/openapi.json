@@ -192,11 +192,23 @@
     "/api/notes/watch": {
       "get": {
         "operationId": "watchNotes",
-        "summary": "Stream new notes as they are created (Server-Sent Events)",
+        "summary": "Stream notes as they are created (Server-Sent Events). The stream ends after `seconds`; call again with `after` = the last note id to continue without gaps",
+        "description": "Each event's SSE id is the note id, so a browser EventSource resumes by itself (Last-Event-ID).",
         "tags": [
           "notes"
         ],
         "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "description": "Resume after this note id (the id of the last note you received). Absent: only notes created from now on",
+              "type": "string",
+              "pattern": "^\\d+$"
+            },
+            "allowEmptyValue": true,
+            "allowReserved": true
+          },
           {
             "in": "query",
             "name": "seconds",
@@ -246,7 +258,9 @@
         "x-fern-sdk-group-name": "notes",
         "x-fern-sdk-method-name": "watch",
         "x-fern-streaming": {
-          "format": "sse"
+          "format": "sse",
+          "terminator": "[end-of-stream]",
+          "resumable": true
         }
       }
     }

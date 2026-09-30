@@ -22,11 +22,11 @@ bash output-modes.sh > out/output-modes.txt && echo "output modes -> fuzz/out/ou
 """
 
 [check]
-description = "Every LOCAL check in one go (no Cloudflare account, needs Docker): the template loop (verify), SDK generation + checks (sdk:demo), and the TypeScript SDK inside workerd under cf dev (sdk:harness:test)"
+description = "Every LOCAL check in one go (no Cloudflare account, needs Docker): the template loop (verify), the oRPC API (api:check), SDK generation + checks (sdk:demo), and the TypeScript SDK inside workerd under cf dev (sdk:harness:test)"
 run = '''
 set -uo pipefail
 failed=0
-for task in verify sdk:demo sdk:harness:test; do
+for task in verify api:check sdk:demo sdk:harness:test; do
   echo "== $task"
   mise run -q "$task" >/tmp/check-$$.log 2>&1 && echo "   ok" || { echo "   FAILED:"; tail -15 /tmp/check-$$.log | sed 's/^/   /'; failed=1; }
 done

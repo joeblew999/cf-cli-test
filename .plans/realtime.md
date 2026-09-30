@@ -27,6 +27,10 @@ A client that says where it got to never misses a note and never sits on a dead 
   - The CLI exits 0 after the error, and only streams with `--format raw` (generator 0.44.0).
 - **Nothing buffers:** Cloudflare doesn't compress or buffer `text/event-stream`.
 
+## Status (2026-09-30)
+
+Built and verified live: steps 1–6 are done, and 7–9 are in progress (see Steps). `mise run api:soak` passes for 7 clients through a redeploy and a client drop, and Workers Logs show the hub restart that `follow()` hid.
+
 ## Design: five rules
 
 1. **One log, one cursor.**
@@ -45,6 +49,7 @@ A client that says where it got to never misses a note and never sits on a dead 
    - **WebSocket:** `notes.live({ after })`, plain JSON notes (each has `id`). Described in AsyncAPI, generated from the contract ([asyncapi.md](asyncapi.md)).
    - Neither adapter has its own reconnect or resume logic.
 5. **Streams are finite and never fail silently.**
+   - A planned end returns the terminator `[end-of-stream]`. If the hub stays down, the stream ends *without* it, so the SDKs (`resumable: true`) reconnect by themselves. No SSE error events: generated clients read them as notes.
    - Every stream ends: SSE after `seconds`, and either transport on a failure it can't recover from, which ends the stream explicitly (SSE `event: error`, WebSocket close 1011/1012).
    - The client rule is the same everywhere: **call again with `after = last id` until you're done.** It works whether the end was planned, an error, or a network drop.
    - Fern's gaps (hidden error, exit 0, no auto-reconnect) stop mattering.
@@ -55,6 +60,12 @@ A client that says where it got to never misses a note and never sits on a dead 
 - **Resume with the `after` input, not only `Last-Event-ID`.** Generated SDKs and the CLI can't send the header or see event ids; the input they get for free.
 - **The Worker holds client connections, not the hub.** A hub that held clients would have to speak plain JSON (a custom DO instead of oRPC's) and couldn't hold SSE while hibernating. The Worker costs CPU only, and the hub still hibernates. Revisit only if the hub's 32,768 subscriber sockets become a limit (then: one hub socket per Worker isolate, or a hub per topic).
 - **Dedupe by note id in `follow()`,** not by event ids from the hub, which change when the hub restarts.
+- **Use Fern's options before writing client code.**
+  - `x-fern-streaming` gets `terminator` + `resumable: true`, so SDKs reconnect after a clean drop.
+  - The AsyncAPI channel's query parameters give `liveNotes.connect({ after })`.
+  - What they don't cover (network resets, event names, substring terminators, the unescaped Rust terminator) goes into the rules and to Fern as issues.
+- **Terminator `[end-of-stream]`, plain text.** It has to be text that no note can contain (Fern matches it as a substring) and that every generator can embed (the Rust one doesn't escape it). Note bodies reject it.
+- **Live events are only a wake-up.** `follow()` yields a live item directly only when its id is the next one; otherwise it reads D1. A single SQLite writer means a visible id implies all lower ones, so this is gap-free and cheap.
 
 ## The test matrix (kept small on purpose)
 
@@ -69,7 +80,8 @@ A client that says where it got to never misses a note and never sits on a dead 
 | Long idle | 20 min, no notes, then one | the note arrives |
 
 - **Clients:** raw SSE, browser-style `EventSource`, TypeScript SDK, Go SDK, CLI, raw WebSocket, TypeScript SDK WebSocket.
-- **Runner:** `api/sse-soak.mjs`, extended with the Go SDK and the scenarios above, becomes `mise run api:soak`. It prints this table. A green table on the deployed Worker is the acceptance.
+- **Runner:** `mise run api:soak` (`api/soak.mjs`) prints this table, with latency. A green table on the deployed Worker is the acceptance. `--idle 20` runs the long-idle case.
+- **SDK reconnect** is checked separately against mock servers: a clean end without the terminator reconnects; a network reset throws, and the client rule covers it.
 - **Unit tests** for `follow()`, with a fake publisher that drops and a fake catch-up: a drop mid-stream, a duplicate across catch-up and live, abort, and `after` beyond the newest note.
 
 ## Steps

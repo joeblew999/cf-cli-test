@@ -201,6 +201,30 @@ Source project: a classic `wrangler.jsonc` with vars (including JSON), KV, D1 (m
 - **The generated TypeScript SDK's `notes.watch()` hides the error.** Its iterator just ends, as if the stream finished normally, and it doesn't reconnect. Every note after the restart was missed.
 - **The generated CLI's `notes watch` exits 0 after the error event** and doesn't reconnect.
 - **The generated CLI's `notes watch` doesn't stream in the json/jsonl/table formats.** It prints everything when the stream ends: `capture_output` is on for every format except `raw`/`http` (fern-cli-generator 0.44.0). `--format raw` streams, but as raw SSE lines.
-- **`/api/notes/live` (WebSocket) goes silently dead.** The socket stays open, but no note arrives after the hub restart. The Worker subscribes without `onError` and never closes or resubscribes. The TypeScript SDK's `liveNotes.connect()` can't reconnect either, because nothing tells it the socket died. This is our bug in `api/src/index.ts`.
+- **`/api/notes/live` (WebSocket) goes silently dead.** The socket stays open, but no note arrives after the hub restart. The Worker subscribes without `onError` and never closes or resubscribes. The TypeScript SDK's `liveNotes.connect()` can't reconnect either, because nothing tells it the socket died. This was our bug in `api/src/index.ts`; `follow()` fixed it (next section).
 - Cloudflare doesn't compress or buffer the stream: there's no `content-encoding` with gzip, br or zstd, and the first byte arrives in about 0.1 s. The response has no `Cache-Control` header.
+
+## The real-time system: follow() (verified 2026-09-30; design in .plans/realtime.md)
+- **Design:**
+  - D1 is the log and the note id is the only position (`after`, the SSE `id:`, the WebSocket message `id`).
+  - The hub DO only wakes followers.
+  - One Worker primitive, `follow()` (`api/src/follow.ts`, 10 unit tests), serves both transports. It subscribes, catches up from D1, goes live, dedupes by id, resubscribes on a hub drop, and re-reads D1 after 30 s idle.
+- **`mise run api:soak` passes on the deployed Worker:** 7 clients, 50/50 notes each, no gaps, no duplicates, in order, through a redeploy (hub restart) and a 6 s client drop. The clients were SSE raw (`after`), SSE `Last-Event-ID`, TypeScript SDK `notes.watch()`, Go SDK `Notes.Watch()`, CLI `notes watch`, WebSocket raw (`?after`) and TypeScript SDK `liveNotes.connect({ after })`.
+- **The hub restart was real, and invisible to clients.** Workers Logs show 7 `follow: hub subscription broken, resubscribing` (`WebSocket closed unexpectedly: 1006`), one per open stream. The hub closed with 1006, not a silent 1000/1001.
+- **Both specs are generated from the contract.** `api/src/asyncapi.ts` (an `asyncapi()` meta plugin plus `AsyncAPIGenerator`, on oRPC 2.0's public APIs) writes `asyncapi.json`, and the hand-written `asyncapi.yml` is gone.
+  - `notes.live`'s input becomes `bindings.ws.query`, and Fern's TypeScript SDK then generates `liveNotes.connect({ after })`.
+  - The OpenAPI generator's `filter` keeps the channel out of `openapi.json`, which was otherwise byte-identical.
+- **Fern clients read the SSE `event:` field as data.** Against a server that sends one note and then `event: error`:
+  - the TypeScript SDK yields the error object as a note;
+  - the Go SDK yields a zero note (`id` 0);
+  - the CLI prints it and exits 0.
+  - So the Worker no longer sends error events: if `follow()` gives up, the stream just ends.
+- **Fern's Go SDK stops at any note containing `[DONE]`.** When the spec sets no terminator, the generated client still uses `DefaultSSETerminator = "[DONE]"`, matched as a substring of each event's data (`bytes.Contains`). A note with body `task [DONE] ok` ended the stream with nothing yielded. Under a resume loop the client would be stuck on that note forever.
+- **Both the TypeScript and Go runtimes match the terminator as a substring of each event's data.** The contract's terminator is therefore `"\u0000"` (JSON-escaped NUL, returned by `watch` on a planned end), and note bodies reject NUL.
+- **Fern's `x-fern-streaming.resumable: true` reconnects only on a clean end** (TypeScript 3.98.0, Go 1.64.0).
+  - Against a mock server that sends notes 1–2 and ends without the terminator, one `watch()` call in each SDK reconnected with `Last-Event-ID: 2` and got 1, 2, 3.
+  - The reconnect resends the original query (`after=0`), so `watch` takes the newer of `after` and `Last-Event-ID`.
+  - A network reset doesn't trigger it. Through a proxy that cuts connections after 3 s, TypeScript threw `terminated` and Go returned `unexpected EOF` (Go reconnects only on `io.EOF`; TypeScript has no catch around the read). So it covers the Worker's give-up path, and the client rule still covers resets.
+- **Fern's Rust generator pastes the terminator into source unescaped.** With a terminator containing `"` or `\`, the CLI's SDK doesn't compile (`Some(""\u0000"".to_string())`). The terminator is therefore plain text, `[end-of-stream]`, and note bodies reject it.
+- **The CLI's `notes watch` prints json/jsonl only when a stream ends,** with generators 0.44.0 and 0.45.1 (`--format raw` streams). It still receives every note, at p50 about 9 s behind with 15 s streams.
 

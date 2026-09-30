@@ -28,7 +28,7 @@ What Fern does through **standard options only**: the spec's OpenAPI features, `
 | File upload | `multipart/form-data` body | typed `UploadFile(...)` |
 | Webhooks | OpenAPI 3.1 `webhooks:` | typed payload structs |
 | Webhook signatures | `x-fern-webhook-signature` (HMAC or asymmetric) | `WebhooksHelper.verifySignature(...)` (TypeScript), `webhooks_helper.go` (Go). Fern lists this as Enterprise; it generated locally here |
-| WebSockets | an `asyncapi.yml` beside the spec, plus TypeScript `generateWebSocketClients: true` | Go: message types only. TypeScript: a reconnecting `LiveNotesSocket` with `connect`, typed `sendSubscribe`, `on('message')` and `close` (needs the `ws` package on Node). Fern lists WS clients as Enterprise; it generated locally here |
+| WebSockets | an AsyncAPI spec beside the OpenAPI one (for `api/`, generated from the contract), plus TypeScript `generateWebSocketClients: true` | Go: message types only. TypeScript: a reconnecting `LiveNotesSocket` with `connect`, typed `sendSubscribe`, `on('message')` and `close` (needs the `ws` package on Node). Fern lists WS clients as Enterprise; it generated locally here |
 | Audiences | `x-fern-audiences` on endpoints plus `audiences: [public]` on a group | one spec gives a full SDK and a public SDK (group `typescript-public` has no internal `uploadFile`) |
 | Overlays | `overlays: overlays.yml` beside the spec (OpenAPI Overlay 1.0) | changes the SDK without editing the spec: `notes.listNotes` becomes `notes.list` |
 
@@ -80,27 +80,81 @@ Building is **heavy** the first time:
 - `mise run sdk:cli:build:mac sdk/out/petstore/cli`: macOS, native (needs Rust).
 - All 7 platforms: cargo-dist on GitHub Actions, one native runner per OS, as Fern sets it up. A Linux container can't build macOS binaries (no Apple SDK) or the `windows-msvc` target.
 
-## From an oRPC Worker (api/) to SDKs and a CLI (verified 2026-09-29)
+## From an oRPC Worker (api/) to SDKs and a CLI (verified 2026-09-30)
 
-`api/` is an oRPC 2.0 (`2.0.0-beta.40`) Worker, contract first (`api/src/contract.ts`: routes plus Zod 4 schemas). It's implemented on D1 and serves `/api/openapi.json`. The chain:
+`api/` is an oRPC 2.0 (`2.0.0-beta.40`) Worker, contract first (`api/src/contract.ts`: routes plus Zod 4 schemas). It's implemented on D1 and serves `/api/openapi.json` and `/api/asyncapi.json`. The chain:
 
 ```sh
-mise run api:spec                  # contract -> sdk/fern/apis/api/openapi.json (offline; server = deployed URL)
+mise run api:spec                  # contract -> sdk/fern/apis/api/{openapi,asyncapi}.json (offline; server = deployed URL)
+mise run api:check                 # typecheck + unit tests + both specs match the contract (part of mise run check)
 mise run sdk:gen api go            # + typescript, cli
 mise run sdk:check sdk/out/api/go
 mise run sdk:cli:build:mac sdk/out/api/cli   # then: cftest-api notes list --page-all / notes watch
-mise run api:live-test             # SSE + WebSocket (Durable Object), raw and through the SDK
+mise run api:live-test             # SSE + WebSocket, raw and through the SDK
+mise run api:soak                  # the real-time matrix: every client x scenario (redeploys cftest-api)
 ```
 
-- **Results:** the Go SDK (build, vet, tests) and the TypeScript SDK (typecheck) both pass. The CLI runs against the live Worker: `meta hello`, `notes create`, and `notes list --page-all` across pages.
-- **What Fern needs is declared in the oRPC contract,** with no overlay. Each route's `openapi({ operationId, tags, spec })` metadata adds the SDK group and method names, `x-fern-pagination`, `x-fern-streaming`, and the SSE note schema to the generated operation. The only hand-written spec left in `sdk/fern/apis/api/` is `asyncapi.yml`, because oRPC generates OpenAPI, not AsyncAPI.
+- **Results:** the Go SDK (build, vet, tests) and the TypeScript SDK (typecheck) both pass. The CLI runs against the live Worker: `meta hello`, `notes create`, `notes list --page-all` across pages, and `notes watch --after`.
+- **Both specs come from the contract; nothing is hand-written.**
+  - OpenAPI: each route's `openapi({ operationId, tags, spec })` metadata adds the SDK group and method names, `x-fern-pagination`, `x-fern-streaming`, and the SSE note schema.
+  - AsyncAPI: the WebSocket channel is a contract procedure (`notes.live`) marked with `asyncapi({ channel, address })` (`api/src/asyncapi.ts`, built on oRPC's public APIs). Its input becomes the channel's query parameters, and Fern's TypeScript SDK gets `liveNotes.connect({ after })`.
 - **Make cursors strings in the contract:** with a numeric `next_cursor`, the CLI's `--page-all` stopped after page one.
-- **Real-time, verified live (`mise run api:live-test`, 5/5):** `NotesHub` is **oRPC's `DurablePublisherObject`** (`@orpc/cloudflare`; subscribers are hibernatable WebSockets). `notes.create` publishes each note.
-  - **SSE:** `notes.watch` is a `publisher.subscribe()` loop. It reaches the Go SDK (`Watch`), the TypeScript SDK (`notes.watch()`) and the CLI (`notes watch`).
-  - **Resume:** the publisher keeps 60 s of events, so a client reconnecting with `Last-Event-ID` gets the notes it missed (verified). That covers a redeploy restarting the DO.
-  - **WebSockets:** `/api/notes/live` is held by the Worker, which forwards published notes as plain JSON. The publisher's own socket protocol is oRPC's, and Fern's TypeScript client needs plain messages. Only the TypeScript SDK gets a client (`liveNotes.connect()`).
-  - **OpenAPI version:** 2.0 defaults to 3.2.0, which `fern check` rejects, so `spec.ts` and the Worker ask for 3.1.1.
+- **OpenAPI version:** 2.0 defaults to 3.2.0, which `fern check` rejects, so both generators ask for 3.1.1 (`api/src/specs.ts`).
 - **Where output goes:** here, `sdk/out/` (gitignored). For real use, SDKs ship as packages or repos (npm, a Go module repo, CLI releases). Fern's `output: location: github` can write to those repos.
+
+### Real-time on Cloudflare: the pattern to copy (.plans/realtime.md)
+
+Verified live with `mise run api:soak`: 7 clients, a redeploy and a client drop, 50/50 notes each, no gaps or duplicates. The rules:
+
+1. **One log, one cursor.** D1 is the source of truth, and the note id is the only position: list `cursor`, stream `after`, the SSE `id:`, and the `id` in every WebSocket message.
+2. **The hub is disposable.** `NotesHub` (oRPC's `DurablePublisherObject`) only wakes followers. It's hibernatable, keeps no resume log, and may restart at any time.
+3. **One `follow()`** (`api/src/follow.ts`, unit-tested). It subscribes, catches up from D1, then goes live, deduping by id. It resubscribes when the hub drops, and re-reads D1 when idle, in case the hub closed silently. Copy it unchanged: it only needs a `subscribe`/`since`/`latest` source.
+4. **Transports are thin adapters** declared in the contract: SSE `notes.watch({ after, seconds })` and WebSocket `notes.live({ after })`.
+5. **Streams are finite and never fail silently.** SSE ends after `seconds` with the terminator `[end-of-stream]`. If the hub stays down, SSE ends without the terminator and the WebSocket closes with 1011. No error events are sent, because generated clients read them as notes.
+6. **Use Fern's options, not custom client code.** `x-fern-streaming: { format: sse, terminator, resumable: true }` is set in the contract, so the TypeScript and Go SDKs reconnect by themselves with `Last-Event-ID` after a clean end without the terminator.
+
+**The client rule, everywhere: when the stream ends or fails, call again with `after` = the last note id.** The SDKs already reconnect after a clean drop. The loop covers the planned end and network resets, which the SDKs throw.
+
+```ts
+// TypeScript SDK (SSE)
+let after: string | undefined;
+for (;;) {
+  try { for await (const note of await client.notes.watch({ after, seconds: 60 })) { handle(note); after = String(note.id); } }
+  catch { await new Promise(r => setTimeout(r, 1000)); } // network reset: back off, then resume
+}
+// TypeScript SDK (WebSocket): on close, connect again with after
+const socket = await client.liveNotes.connect({ after, reconnectAttempts: 0 });
+```
+
+```go
+// Go SDK
+for {
+	stream, err := c.Notes.Watch(ctx, &cftestapi.WatchNotesRequest{After: after})
+	if err == nil {
+		for note, err := stream.Recv(); err == nil; note, err = stream.Recv() { handle(note); a := strconv.Itoa(note.ID); after = &a }
+		stream.Close()
+	}
+	time.Sleep(time.Second)
+}
+```
+
+```sh
+# CLI: prints a stream's notes when it ends (json/jsonl), or live with --format raw
+after=""
+while :; do
+  out=$(cftest-api notes watch ${after:+--after "$after"} --seconds 60 --format jsonl)
+  [ -n "$out" ] && { echo "$out"; after=$(echo "$out" | tail -1 | jq -r .id); }
+done
+```
+
+A browser's `EventSource` needs nothing: the SSE id is the note id, so its automatic `Last-Event-ID` is the same position.
+
+**Known client gaps (Fern), all covered by the rules above:**
+- `resumable` doesn't reconnect after a network reset (only after a clean end).
+- SSE `event:` names are ignored, so an error event becomes a "note".
+- The terminator is matched as a substring, and the Go SDK defaults to `[DONE]` when none is declared.
+- The Rust (CLI) generator doesn't escape the terminator.
+- The CLI only streams live with `--format raw` (generators 0.44.0 and 0.45.1).
 
 Everything runs through mise from the repo root:
 

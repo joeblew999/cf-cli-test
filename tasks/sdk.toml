@@ -225,12 +225,43 @@ for mode in production api; do PROJECT=sdk/harness MODE=$mode mise run -q deploy
 # --- api/: an oRPC Worker (contract first) as the spec source ---
 
 ["api:spec"]
-description = "Write the oRPC API's OpenAPI spec from its contract (api/src/contract.ts) into sdk/fern/apis/api/openapi.json, with the deployed URL as its server"
+description = "Write the oRPC API's OpenAPI and AsyncAPI specs from its contract (api/src/contract.ts) into sdk/fern/apis/api/{openapi,asyncapi}.json, with the deployed URL as their server"
 dir = "{{config_root}}/api"
 run = '''
 url=$(node -p 'require("../.cf-manifest.json").find(e => e.kind === "worker" && e.name === "cftest-api")?.url ?? "https://api.example.com"' 2>/dev/null || echo https://api.example.com)
-node spec.ts ../sdk/fern/apis/api/openapi.json "$url"
+node spec.ts ../sdk/fern/apis/api/openapi.json ../sdk/fern/apis/api/asyncapi.json "$url"
 '''
+
+["api:check"]
+description = "LOCAL: the oRPC API's checks: typecheck, unit tests (follow()), and both committed specs (sdk/fern/apis/api/{openapi,asyncapi}.json) match the contract"
+dir = "{{config_root}}/api"
+run = '''
+set -euo pipefail
+npm run -s typecheck >/dev/null && echo "typecheck ok"
+npx vitest run >/dev/null && echo "unit tests ok"
+url=$(node -p 'require("../.cf-manifest.json").find(e => e.kind === "worker" && e.name === "cftest-api")?.url ?? "https://api.example.com"' 2>/dev/null || echo https://api.example.com)
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+node spec.ts "$tmp/openapi.json" "$tmp/asyncapi.json" "$url" >/dev/null
+for f in openapi asyncapi; do
+  diff -q "$tmp/$f.json" "../sdk/fern/apis/api/$f.json" >/dev/null || { echo "sdk/fern/apis/api/$f.json is stale: run mise run api:spec" >&2; exit 1; }
+done
+echo "specs match the contract"
+'''
+
+["api:test"]
+description = "Unit tests for the API (api/test: follow(), the one real-time feed)"
+dir = "{{config_root}}/api"
+run = "npx vitest run"
+
+["api:soak"]
+description = "REMOTE, redeploys cftest-api and writes test notes: the real-time matrix (every client x scenario: planned end, hub restart, client drop). --idle <min> for the long-idle case. Extra args reach api/soak.mjs"
+raw_args = true
+run = '''
+soak() {
+  url=$(node -p 'require("./.cf-manifest.json").find(e => e.kind === "worker" && e.name === "cftest-api")?.url ?? ""')
+  [ -n "$url" ] || { echo "deploy first: PROJECT=api mise run deploy" >&2; exit 1; }
+  node api/soak.mjs "$url" "$@"
+}; soak'''
 
 ["api:live-test"]
 description = "REMOTE, read + writes test notes: the API's real-time paths on the deployed Worker. Raw SSE + WebSocket clients, then the generated TypeScript SDK (notes.watch, liveNotes.connect); a created note must reach all of them via the NotesHub Durable Object"

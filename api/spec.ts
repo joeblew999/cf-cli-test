@@ -1,14 +1,13 @@
-// Writes the API's OpenAPI spec from the contract, offline (no Worker needed), for Fern:
-//   node spec.ts <out.json> [server-url]
-// The same generator the Worker serves /api/openapi.json with.
+// Writes the API's OpenAPI and AsyncAPI specs from the contract, offline (no Worker needed), for Fern:
+//   node spec.ts <openapi.json> <asyncapi.json> [server-url]
+// The same generators the Worker serves /api/openapi.json and /api/asyncapi.json with (src/specs.ts).
 import { writeFileSync } from "node:fs";
-import { OpenAPIGenerator } from "@orpc/openapi";
-import { ZodToJsonSchemaConverter } from "@orpc/zod";
-import { contract, info } from "./src/contract.ts";
+import { contract } from "./src/contract.ts";
+import { asyncapiSpec, openapiSpec } from "./src/specs.ts";
 
-// OPENAPI_VERSION: 2.0 generates 3.2.0 by default; 3.1.1 is what 1.x produced and what Fern reads today.
-const version = (process.env.OPENAPI_VERSION ?? "3.1.1") as "3.1.1";
-const [out, server = "https://api.example.com"] = process.argv.slice(2);
-const spec = await new OpenAPIGenerator({ converters: [new ZodToJsonSchemaConverter()] }).generate(contract, { version, base: { info, servers: [{ url: server }] } });
-writeFileSync(out, JSON.stringify(spec, null, 2) + "\n");
-console.log(`${out}: ${Object.keys(spec.paths ?? {}).length} paths (${server})`);
+const [openapiOut, asyncapiOut, server = "https://api.example.com"] = process.argv.slice(2);
+const openapi = await openapiSpec(contract, server);
+const asyncapi = await asyncapiSpec(contract, server);
+writeFileSync(openapiOut, JSON.stringify(openapi, null, 2) + "\n");
+writeFileSync(asyncapiOut, JSON.stringify(asyncapi, null, 2) + "\n");
+console.log(`${openapiOut}: ${Object.keys(openapi.paths ?? {}).length} paths; ${asyncapiOut}: ${Object.keys(asyncapi.channels).length} channels (${server})`);

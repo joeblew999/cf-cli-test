@@ -1,11 +1,11 @@
-# The oRPC Worker in api/: openapi.json is written by `mise run api:spec` (never by hand); what oRPC
-# needs (SDK names, x-fern-pagination, x-fern-streaming) is declared in the contract itself; only the
-# WebSocket channel is written by hand, in asyncapi.yml (oRPC generates OpenAPI, not AsyncAPI).
+# The oRPC Worker in api/: openapi.json and asyncapi.json are written by `mise run api:spec` from the
+# contract (never by hand). What Fern needs (SDK names, x-fern-pagination, x-fern-streaming) is
+# declared in the contract; the WebSocket channel comes from api/src/asyncapi.ts.
 # Generate: mise run sdk:gen api <group>
 api:
   specs:
     - openapi: openapi.json
-    - asyncapi: asyncapi.yml
+    - asyncapi: asyncapi.json
 
 groups:
   go:
@@ -36,7 +36,7 @@ groups:
   cli:
     generators:
       - name: fernapi/fern-cli-generator
-        version: 0.44.0
+        version: 0.45.1
         output:
           location: local-file-system
           path: ../../../out/api/cli

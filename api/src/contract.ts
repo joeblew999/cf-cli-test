@@ -1,5 +1,6 @@
 import { asyncIteratorObject, oc } from "@orpc/contract";
 import { openapi, type OpenAPIV3_2 } from "@orpc/openapi";
+import { asyncapi } from "./asyncapi.ts";
 import { z } from "zod";
 
 // The API, contract first: every route with its method, path, input and output as Zod 4 schemas.
@@ -9,12 +10,25 @@ import { z } from "zod";
 // (x-fern-*) to the generated operation, so nothing is patched afterwards.
 
 export const info = { title: "cftest-api", version: "1.0.0", description: "Notes API: oRPC contract -> OpenAPI -> Fern." };
+export const asyncInfo = { title: "cftest-api live", version: "1.0.0" };
 
 export const note = z.object({
 	id: z.number().int(),
 	body: z.string(),
 	created_at: z.string(),
 });
+
+/** The resume position in every stream: a note id, as an opaque string like list's cursor (.plans/realtime.md, rule 1). */
+export const after = z.string().regex(/^\d+$/).optional()
+	.describe("Resume after this note id (the id of the last note you received). Absent: only notes created from now on");
+
+/**
+ * What a planned stream end returns: SSE `event: close` with `data: "[end-of-stream]"`, Fern's terminator
+ * for watch. Fern matches the terminator as a substring of each event's data, so no note may contain
+ * it (note bodies reject it), and it is plain text because Fern's Rust generator pastes it into
+ * source unescaped.
+ */
+export const END = "[end-of-stream]";
 
 /** Fern's names for the SDK method: client.<group>.<method>() and `cli <group> <method>`. */
 const sdk = (group: string, method: string, extra: Record<string, unknown> = {}) =>
@@ -38,21 +52,36 @@ export const contract = {
 			.output(z.object({ data: z.array(note), next_cursor: z.string().optional().describe("Pass as cursor for the next page; absent on the last page") })),
 		watch: oc
 			.meta(openapi({
-				method: "GET", path: "/api/notes/watch", summary: "Stream new notes as they are created (Server-Sent Events)", tags: ["notes"], operationId: "watchNotes",
-				// oRPC describes the stream as its SSE envelope (event: message|done|error); tell Fern it's
+				method: "GET", path: "/api/notes/watch", summary: "Stream notes as they are created (Server-Sent Events). The stream ends after `seconds`; call again with `after` = the last note id to continue without gaps", description: "Each event's SSE id is the note id, so a browser EventSource resumes by itself (Last-Event-ID).", tags: ["notes"], operationId: "watchNotes",
+				// oRPC describes the stream as its SSE envelope (event: message|close|error); tell Fern it's
 				// an SSE stream whose `data:` payloads are notes.
 				spec: op => {
 					const ok = op.responses?.["200"] as OpenAPIV3_2.ResponseObject | undefined;
 					const stream = ok?.content?.["text/event-stream"] as OpenAPIV3_2.MediaTypeObject | undefined;
 					if (stream) stream.schema = z.toJSONSchema(note) as OpenAPIV3_2.SchemaObject;
-					return sdk("notes", "watch", { "x-fern-streaming": { format: "sse" } })(op);
+					// resumable: the SDKs reconnect by themselves on a drop, sending Last-Event-ID (= the note id).
+					// The terminator marks a planned end, so they only reconnect on genuine drops.
+					return sdk("notes", "watch", { "x-fern-streaming": { format: "sse", terminator: END, resumable: true } })(op);
 				},
 			}))
-			.input(z.object({ seconds: z.coerce.number().int().min(1).max(300).default(30).describe("How long to keep the stream open") }))
+			.input(z.object({
+				after,
+				seconds: z.coerce.number().int().min(1).max(300).default(30).describe("How long to keep the stream open"),
+			}))
+			.output(asyncIteratorObject(note, z.literal(END).optional())),
+		// The WebSocket channel: in the AsyncAPI spec (src/asyncapi.ts), not in OpenAPI. Plain JSON notes;
+		// `after` (a query parameter) resumes, the same position as watch.
+		live: oc
+			.meta(openapi({ method: "GET", path: "/api/notes/live" }))
+			.meta(asyncapi({
+				channel: "liveNotes", address: "/api/notes/live", operationId: "receiveNote", message: "Note",
+				summary: "New notes over a WebSocket, as plain JSON. On close, reconnect with `after` = the last note id to continue without gaps",
+			}))
+			.input(z.object({ after }))
 			.output(asyncIteratorObject(note)),
 		create: oc
 			.meta(openapi({ method: "POST", path: "/api/notes", summary: "Create a note", tags: ["notes"], operationId: "createNote", spec: sdk("notes", "create") }))
-			.input(z.object({ body: z.string().min(1) }))
+			.input(z.object({ body: z.string().min(1).refine(body => !body.includes(END), `must not contain ${END}`) }))
 			.output(note),
 	},
 };

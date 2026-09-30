@@ -20,6 +20,7 @@
 	"dependencies": {
 		"@orpc/cloudflare": "2.0.0-beta.40",
 		"@orpc/contract": "2.0.0-beta.40",
+		"@orpc/json-schema": "2.0.0-beta.40",
 		"@orpc/openapi": "2.0.0-beta.40",
 		"@orpc/server": "2.0.0-beta.40",
 		"@orpc/zod": "2.0.0-beta.40",
