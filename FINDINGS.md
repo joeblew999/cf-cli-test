@@ -192,3 +192,15 @@ Source project: a classic `wrangler.jsonc` with vars (including JSON), KV, D1 (m
   - the CLI's `notes list --page-all` and `notes watch`, against the deployed Worker.
 - Hibernation: `DurablePublisherObject` accepts subscribers with `ctx.acceptWebSocket` (the hibernatable API) and keeps its state in SQLite plus an alarm, so the DO can sleep between events. SSE streams and `/api/notes/live` sockets are held by the Worker, which bills CPU time, not wall time, and connects to the DO as a WebSocket client.
 - 2.0 doesn't remove `asyncapi.yml`: no oRPC package generates AsyncAPI (asked upstream in middleapi/orpc#2115). `@orpc/hibernation` gives hibernatable WebSockets that speak oRPC's RPC protocol, not the plain JSON messages Fern's WebSocket client expects.
+
+## SSE and WebSockets across a redeploy (api/sse-soak.mjs, verified 2026-09-30, two runs)
+- The test: six clients watch while a note is created every 2 s, and the Worker is redeployed mid-run (`node api/sse-soak.mjs <origin>`).
+- The hub (NotesHub) restarted 5 s after the deploy finished in one run and 36 s after in the other. Rollout is eventually consistent, so the break comes at an unpredictable time after a deploy.
+- **SSE streams end with an error, not silently.** At the hub restart the Worker's stream sends `event: error` (`INTERNAL_SERVER_ERROR`) and closes. oRPC surfaced the hub's close as an error here; the feared silent 1000/1001 close didn't happen.
+- **Reconnecting with `Last-Event-ID` loses nothing:** 41/41 and 26/26 notes, 0 duplicates, for a raw client that reconnects like a browser's `EventSource`.
+- **The generated TypeScript SDK's `notes.watch()` hides the error.** Its iterator just ends, as if the stream finished normally, and it doesn't reconnect. Every note after the restart was missed.
+- **The generated CLI's `notes watch` exits 0 after the error event** and doesn't reconnect.
+- **The generated CLI's `notes watch` doesn't stream in the json/jsonl/table formats.** It prints everything when the stream ends: `capture_output` is on for every format except `raw`/`http` (fern-cli-generator 0.44.0). `--format raw` streams, but as raw SSE lines.
+- **`/api/notes/live` (WebSocket) goes silently dead.** The socket stays open, but no note arrives after the hub restart. The Worker subscribes without `onError` and never closes or resubscribes. The TypeScript SDK's `liveNotes.connect()` can't reconnect either, because nothing tells it the socket died. This is our bug in `api/src/index.ts`.
+- Cloudflare doesn't compress or buffer the stream: there's no `content-encoding` with gzip, br or zstd, and the first byte arrives in about 0.1 s. The response has no `Cache-Control` header.
+

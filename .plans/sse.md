@@ -18,6 +18,12 @@ Goal: a client watching `GET /api/notes/watch` (raw, TypeScript SDK, Go SDK, CLI
 - **Resume works:** 60 s retention, and `Last-Event-ID` replays missed notes. Proven with our raw client only.
 - **Client reconnection is unknown** for Fern's TypeScript/Go SDKs and the CLI's `notes watch`.
 
+## Soak test results (2026-09-30, see FINDINGS.md)
+
+- SSE: at a hub restart the stream ends with `event: error`. Raw clients that reconnect with `Last-Event-ID` lose nothing.
+- The TypeScript SDK's `notes.watch()` ends silently without reconnecting, and the CLI exits 0 without reconnecting. The CLI also only streams with `--format raw`.
+- WebSocket `/api/notes/live` goes **silently dead** (our code): fix first.
+
 ## The tricks, in order
 
 1. **Hub-restart proof test first (`api/sse-soak.mjs`).** Open SSE clients (raw, TypeScript SDK, Go SDK, CLI) and a WebSocket client. Publish a note every few seconds, redeploy mid-stream, keep publishing, then report per client: notes lost, duplicated, time to recover. Also log the close code the Worker sees from the hub. This gives the baseline, and says whether the silent dead stream is real.
