@@ -1,6 +1,6 @@
 # Plan: generate asyncapi.yml from the oRPC contract
 
-Tracked in issue #4.
+Tracked in issue #4. Part of [realtime.md](realtime.md) (rule 4: both transports are declared in the one contract).
 
 Goal: `sdk/fern/apis/api/asyncapi.yml` is generated from `api/src/contract.ts`, like `openapi.json`, and never written by hand. First in this repo, then offered to oRPC (middleapi/orpc#2115).
 
@@ -19,6 +19,7 @@ Goal: `sdk/fern/apis/api/asyncapi.yml` is generated from `api/src/contract.ts`, 
   ```ts
   live: oc
     .meta(asyncapi({ channel: "liveNotes", address: "/api/notes/live", operationId: "receiveNote", summary: "..." }))
+    .input(z.object({ after: z.string().optional() }))   // resume position (a note id), as a query parameter
     .output(asyncIteratorObject(note)),
   ```
 - It stays out of `openapi.json` (the generator's `filter` option, or a flag in the metadata) and appears only in AsyncAPI.
@@ -39,6 +40,7 @@ Goal: `sdk/fern/apis/api/asyncapi.yml` is generated from `api/src/contract.ts`, 
      - `sdk:gen api typescript` still gives `liveNotes.connect()`;
      - `api:live-test` passes 5/5.
 2. **Serve the channel from the contract.** `/api/notes/live` is implemented by the router (`live` handler: a `publisher.subscribe()` loop, like `watch`). A small WebSocket adapter in the Worker sends each yielded value as plain JSON. The channel and its implementation are then type-checked against the same contract, so they can't drift apart.
+   - The handler is `follow()` from [realtime.md](realtime.md), the same one `watch` uses.
    - This also fixes today's `asyncapi.yml` comment, which says the Durable Object holds the socket. The Worker does.
 3. **Put it in `mise run check`.** Regenerate both specs and fail if either differs from the committed files.
 4. **Offer it upstream (outward-facing; needs a go-ahead first).**

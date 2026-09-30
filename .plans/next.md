@@ -32,6 +32,6 @@ Where this repo stands (2026-09-29) and what comes next, in order. What's proven
    - Merge when we're happy to run a beta here; move our real projects when 2.0.0 is final.
    - Rebuild the Rust CLI from the regenerated spec (the old binary already works against the 2.0 Worker).
    - Generate `asyncapi.yml` from the contract: see [asyncapi.md](asyncapi.md), issue #4 (prototype here, then offer it on middleapi/orpc#2115).
-8. **SSE that holds up on Cloudflare:** see [sse.md](sse.md) (issue #3). Start with the redeploy soak test (is there a silent dead stream after a hub restart?).
+8. **The real-time system (SSE + WebSockets):** see [realtime.md](realtime.md) (issue #3). One log (D1), one cursor (note id), one `follow()` primitive, thin transports, and a small test matrix.
 9. **Clean the Cloudflare account.** `mise run cleanup` deletes everything in `.cf-manifest.json` (about 40 test Workers and resources, all named `cftest-*`).
 10. **Optional upstream work (outward-facing, needs a go-ahead):** file the `cf` bugs from FINDINGS.md (silent paging, exit 0 on unknown commands, the bulk-secrets no-op, `--dry-run` printing secrets), and propose Forge overlays for name→ID lookups and rollback.
