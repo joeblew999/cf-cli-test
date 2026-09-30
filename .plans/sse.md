@@ -1,5 +1,7 @@
 # Plan: SSE that holds up on Cloudflare
 
+Tracked in issue #3.
+
 Goal: a client watching `GET /api/notes/watch` (raw, TypeScript SDK, Go SDK, CLI) never misses a note and never sits on a dead stream: across deploys, runtime updates, idle hours and hub restarts. The Durable Object stays hibernatable.
 
 ## What Cloudflare guarantees (docs, checked 2026-09-30)

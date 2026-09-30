@@ -1,5 +1,7 @@
 # Plan: generate asyncapi.yml from the oRPC contract
 
+Tracked in issue #4.
+
 Goal: `sdk/fern/apis/api/asyncapi.yml` is generated from `api/src/contract.ts`, like `openapi.json`, and never written by hand. First in this repo, then offered to oRPC (middleapi/orpc#2115).
 
 ## Why it's doable now (oRPC 2.0.0-beta.40, checked 2026-09-30)
