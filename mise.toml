@@ -9,7 +9,7 @@
 # account.toml (resources, cleanup), verify.toml (re-run the evaluation when cf changes).
 
 [tools]
-node = "26"
+node = "26.10.0"
 # cf itself, on PATH as plain `cf` (its intended global install; agents call `cf ...`).
 "npm:cf" = "1.0.0-beta.5"
 
