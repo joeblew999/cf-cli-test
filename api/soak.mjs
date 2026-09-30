@@ -7,7 +7,8 @@
 //   client drop   - at --drop-at every client disconnects for 6 s, then resumes with `after`
 //   long idle     - `--idle <minutes>`: no notes for that long, then one note
 // PASS = every note created, exactly once, in id order. Latency (creation to receipt) is reported,
-// not judged: the generated CLI prints json/jsonl only when a stream ends (Fern CLI generator).
+// not judged: the generated CLI prints json/jsonl only when a stream ends.
+// Upstream: fern-api/fern#17939 (when fixed: the CLI's latency drops to ~0 like the SDKs'; judge it)
 //
 //   node soak.mjs <origin> [--no-deploy] [--seconds 100] [--deploy-at 30] [--drop-at 65] [--stream-seconds 15]
 //   node soak.mjs <origin> --idle 20
@@ -116,6 +117,7 @@ async function drive(c) {
     const ac = new AbortController();
     c.abort = () => ac.abort();
     let why;
+    // Upstream: fern-api/fern#17937 (when fixed: resumable SDKs survive resets themselves; the catch stays for the rule)
     try { why = await c.run(c.last, ac.signal, note => record(c, note)); } catch (error) { why = ac.signal.aborted ? "dropped" : `error: ${error.message}`; }
     c.runs++;
     const key = String(why).replace(/\d{3,}/g, "N").slice(0, 60);

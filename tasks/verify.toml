@@ -34,3 +34,7 @@ rm -f /tmp/check-$$.log
 [ "$failed" = 0 ] && echo "All local checks passed." || echo "Some checks FAILED."
 exit $failed
 '''
+
+["upstream:status"]
+description = "Upstream issues our code works around (every `Upstream: <repo>#<n>` tag) and their state: a CLOSED one means its workaround can go (table in api/README.md)"
+run = "node {{config_root}}/scripts/upstream.mjs"

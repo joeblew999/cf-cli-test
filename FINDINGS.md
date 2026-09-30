@@ -183,7 +183,7 @@ Source project: a classic `wrangler.jsonc` with vars (including JSON), KV, D1 (m
 ## oRPC 2.0 beta on api/ (2.0.0-beta.40, verified 2026-09-30)
 - The port is small. `.route({...})` becomes `.meta(openapi({...}))` from `@orpc/openapi`, `eventIterator` becomes `asyncIteratorObject`, and `@orpc/zod/zod4` becomes `@orpc/zod`. On the generator, `schemaConverters` becomes `converters` and `info`/`servers` move under `base`.
 - The Durable Object publisher is in **`@orpc/cloudflare`**, not `@orpc/publisher`: `PublisherDurableObject` becomes `DurablePublisherObject`, and `{ retentionSeconds: 60 }` becomes `{ enabled: true, seconds: 60 }`.
-- 2.0 generates **OpenAPI 3.2.0 by default, and `fern check` rejects it** ("Unsupported OpenAPI version: 3.2.0"). Pass `version: "3.1.1"`. With that, the spec matches the 1.15.4 one except that output objects now carry `additionalProperties: false`.
+- 2.0 generates **OpenAPI 3.2.0 by default, and `fern check` rejects it** ([fern-api/fern#9559](https://github.com/fern-api/fern/issues/9559)) ("Unsupported OpenAPI version: 3.2.0"). Pass `version: "3.1.1"`. With that, the spec matches the 1.15.4 one except that output objects now carry `additionalProperties: false`.
 - Even at 3.2.0, oRPC describes SSE as its envelope (`event: message|close|error`) under `schema`, not with 3.2's `itemSchema`. The contract's `spec` hook that gives Fern the note schema is still needed. The stream's end event is now `close`; it was `done` in 1.x.
 - Everything passes on 2.0:
   - `fern check`;
@@ -214,17 +214,17 @@ Source project: a classic `wrangler.jsonc` with vars (including JSON), KV, D1 (m
 - **Both specs are generated from the contract.** `api/src/asyncapi.ts` (an `asyncapi()` meta plugin plus `AsyncAPIGenerator`, on oRPC 2.0's public APIs) writes `asyncapi.json`, and the hand-written `asyncapi.yml` is gone.
   - `notes.live`'s input becomes `bindings.ws.query`, and Fern's TypeScript SDK then generates `liveNotes.connect({ after })`.
   - The OpenAPI generator's `filter` keeps the channel out of `openapi.json`, which was otherwise byte-identical.
-- **Fern clients read the SSE `event:` field as data.** Against a server that sends one note and then `event: error`:
+- **Fern clients read the SSE `event:` field as data** ([fern-api/fern#17938](https://github.com/fern-api/fern/issues/17938)). Against a server that sends one note and then `event: error`:
   - the TypeScript SDK yields the error object as a note;
   - the Go SDK yields a zero note (`id` 0);
   - the CLI prints it and exits 0.
   - So the Worker no longer sends error events: if `follow()` gives up, the stream just ends.
-- **Fern's Go SDK stops at any note containing `[DONE]`.** When the spec sets no terminator, the generated client still uses `DefaultSSETerminator = "[DONE]"`, matched as a substring of each event's data (`bytes.Contains`). A note with body `task [DONE] ok` ended the stream with nothing yielded. Under a resume loop the client would be stuck on that note forever.
+- **Fern's Go SDK stops at any note containing `[DONE]`** ([fern-api/fern#17936](https://github.com/fern-api/fern/issues/17936)). When the spec sets no terminator, the generated client still uses `DefaultSSETerminator = "[DONE]"`, matched as a substring of each event's data (`bytes.Contains`). A note with body `task [DONE] ok` ended the stream with nothing yielded. Under a resume loop the client would be stuck on that note forever.
 - **Both the TypeScript and Go runtimes match the terminator as a substring of each event's data.** The contract's terminator is therefore `"\u0000"` (JSON-escaped NUL, returned by `watch` on a planned end), and note bodies reject NUL.
-- **Fern's `x-fern-streaming.resumable: true` reconnects only on a clean end** (TypeScript 3.98.0, Go 1.64.0).
+- **Fern's `x-fern-streaming.resumable: true` reconnects only on a clean end** ([fern-api/fern#17937](https://github.com/fern-api/fern/issues/17937)) (TypeScript 3.98.0, Go 1.64.0).
   - Against a mock server that sends notes 1–2 and ends without the terminator, one `watch()` call in each SDK reconnected with `Last-Event-ID: 2` and got 1, 2, 3.
   - The reconnect resends the original query (`after=0`), so `watch` takes the newer of `after` and `Last-Event-ID`.
   - A network reset doesn't trigger it. Through a proxy that cuts connections after 3 s, TypeScript threw `terminated` and Go returned `unexpected EOF` (Go reconnects only on `io.EOF`; TypeScript has no catch around the read). So it covers the Worker's give-up path, and the client rule still covers resets.
-- **Fern's Rust generator pastes the terminator into source unescaped.** With a terminator containing `"` or `\`, the CLI's SDK doesn't compile (`Some(""\u0000"".to_string())`). The terminator is therefore plain text, `[end-of-stream]`, and note bodies reject it.
-- **The CLI's `notes watch` prints json/jsonl only when a stream ends,** with generators 0.44.0 and 0.45.1 (`--format raw` streams). It still receives every note, at p50 about 9 s behind with 15 s streams.
+- **Fern's Rust generator pastes the terminator into source unescaped** ([fern-api/fern#17939](https://github.com/fern-api/fern/issues/17939)). With a terminator containing `"` or `\`, the CLI's SDK doesn't compile (`Some(""\u0000"".to_string())`). The terminator is therefore plain text, `[end-of-stream]`, and note bodies reject it.
+- **The CLI's `notes watch` prints json/jsonl only when a stream ends** ([fern-api/fern#17939](https://github.com/fern-api/fern/issues/17939)), with generators 0.44.0 and 0.45.1 (`--format raw` streams). It still receives every note, at p50 about 9 s behind with 15 s streams.
 

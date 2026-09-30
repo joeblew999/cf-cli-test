@@ -149,12 +149,7 @@ done
 
 A browser's `EventSource` needs nothing: the SSE id is the note id, so its automatic `Last-Event-ID` is the same position.
 
-**Known client gaps (Fern), all covered by the rules above:**
-- `resumable` doesn't reconnect after a network reset (only after a clean end).
-- SSE `event:` names are ignored, so an error event becomes a "note".
-- The terminator is matched as a substring, and the Go SDK defaults to `[DONE]` when none is declared.
-- The Rust (CLI) generator doesn't escape the terminator.
-- The CLI only streams live with `--format raw` (generators 0.44.0 and 0.45.1).
+**Known client gaps (Fern), all covered by the rules above:** the table of upstream issues, the workaround for each, and what to change when it's fixed is in [../api/README.md](../api/README.md#upstream-issues-workarounds-to-remove-when-theyre-fixed). `mise run upstream:status` shows which are fixed.
 
 Everything runs through mise from the repo root:
 

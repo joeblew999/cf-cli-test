@@ -28,6 +28,8 @@ export const after = z.string().regex(/^\d+$/).optional()
  * it (note bodies reject it), and it is plain text because Fern's Rust generator pastes it into
  * source unescaped.
  */
+// Upstream: fern-api/fern#17936 (when fixed: terminators match whole data values, so the body rule can go)
+// Upstream: fern-api/fern#17939 (when fixed: the Rust generator escapes it, so any text would do)
 export const END = "[end-of-stream]";
 
 /** Fern's names for the SDK method: client.<group>.<method>() and `cli <group> <method>`. */
@@ -53,6 +55,7 @@ export const contract = {
 		watch: oc
 			.meta(openapi({
 				method: "GET", path: "/api/notes/watch", summary: "Stream notes as they are created (Server-Sent Events). The stream ends after `seconds`; call again with `after` = the last note id to continue without gaps", description: "Each event's SSE id is the note id, so a browser EventSource resumes by itself (Last-Event-ID).", tags: ["notes"], operationId: "watchNotes",
+				// Upstream: fern-api/fern#17938 (when fixed: Fern could read oRPC's envelope, event: message|close|error, as is)
 				// oRPC describes the stream as its SSE envelope (event: message|close|error); tell Fern it's
 				// an SSE stream whose `data:` payloads are notes.
 				spec: op => {

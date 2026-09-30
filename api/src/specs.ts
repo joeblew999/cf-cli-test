@@ -10,6 +10,7 @@ import { asyncInfo, info } from "./contract.ts";
 const converters = [new ZodToJsonSchemaConverter()];
 
 /** OpenAPI 3.1.1 (oRPC 2.0 defaults to 3.2.0, which Fern rejects), without the WebSocket channels. */
+// Upstream: fern-api/fern#9559 (when fixed: drop `version` and use oRPC's 3.2.0 default)
 export const openapiSpec = (router: RouterContract | AnyRouter, server: string) =>
 	new OpenAPIGenerator({ converters }).generate(router, {
 		version: "3.1.1",

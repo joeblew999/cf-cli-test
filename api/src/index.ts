@@ -45,6 +45,7 @@ export const router = api.router({
 		// newer wins). A planned end (`seconds`) returns END, the terminator; if follow() gives up (hub
 		// down) the stream just ends without it, so the SDKs reconnect by themselves. No error events:
 		// generated clients would read them as notes.
+		// Upstream: fern-api/fern#17938 (when fixed: an error event could tell clients why the stream ended)
 		watch: api.notes.watch.handler(async function* ({ input, signal, lastEventId }) {
 			const until = AbortSignal.any([AbortSignal.timeout(input.seconds * 1000), ...(signal ? [signal] : [])]);
 			const positions = [input.after, lastEventId].filter((v): v is string => !!v && /^\d+$/.test(v)).map(Number);
