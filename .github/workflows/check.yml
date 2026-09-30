@@ -1,0 +1,15 @@
+# Every local check (no Cloudflare account): mise installs the pinned tools, then `mise run check`.
+name: check
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: jdx/mise-action@v5.0.0
+      - run: mise run check
